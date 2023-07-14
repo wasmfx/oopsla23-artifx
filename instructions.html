@@ -1,0 +1,892 @@
+<h1 id="artifact-evaluation-instructions">Artifact Evaluation Instructions</h1>
+<p>This document describes how to reproduce the experiments in Section 5.1 of the paper:</p>
+<p><em>Luna Phipps-Costin, Andreas Rossberg, Arjun Guha, Daan Leijen, Daniel Hillerström, KC Sivaramakrishnan, Matija Pretnar, Sam Lindley, “Continuing WebAssembly with Effect Handlers”, Proc. ACM Program. Lang. 7(OOPSLA2), 2023</em>.</p>
+<p><strong>Note</strong>: The empirical data presented in the paper were measured on a particular reference machine available at the time of writing. In order to reproduce this data, it would be necessary to have access to the particular reference machine (or a virtually identical one). The purpose of this document is to describe how to obtain measurements like those reported in the paper.</p>
+<p>This document is best viewed on GitHub (https://github.com/wasmfx/oopsla23-artifx).</p>
+<h2 id="overview-of-the-artifact">Overview of the Artifact</h2>
+<p>The artifact is structured as follows</p>
+<ol type="1">
+<li><a href="#getting-started-guide">Getting Started Guide</a> enumerates the software and hardware requirements to build and run the artifact software.</li>
+<li><a href="#step-by-step-instructions">Step by Step Instructions</a> is a detailed guide on how to run the experiments inside a Docker container running the provided Docker image.</li>
+<li><a href="#inspecting-the-source-files">Inspecting the Source Files</a> highlights some relevant source files with our WasmFX additions.</li>
+<li><a href="#the-wasmfx-toolchain">The WasmFX Toolchain</a> describes how our “toolchain” works.</li>
+<li><a href="#reference-machine-specification">Reference Machine Specification</a> contains some detailed information about the reference machine used to conduct the experiments.</li>
+</ol>
+<p>The directory structure of the artifact is as follows</p>
+<ul>
+<li><code>benchmarks/c/</code> contains the source code for the C benchmarks.</li>
+<li><code>benchmarks/go</code> contains the source code for the TinyGo binary size benchmarks.</li>
+<li><code>Dockerfile</code> is the Docker build script.</li>
+<li><code>LICENSE</code> is the license which the provided code – if not stated otherwise – is licensed under.</li>
+<li><code>patch/</code> contains the changesets for our forks of wasm-spec, wasm-tools, and wasmtime.</li>
+<li><code>README.md</code> is a copy of this document.</li>
+<li><code>run-experiments.sh</code> is a script to automate running the experiments</li>
+<li><code>run-tests.sh</code> is a script to automate running the testsuites</li>
+<li><code>run-tests.sh.reference</code> contains a sample output of running <code>run-tests.sh</code></li>
+<li><code>tinygo/</code> contains our fork of TinyGo version 0.26</li>
+<li><code>wasm-spec</code> is our fork of the WebAssembly reference interpreter</li>
+<li><code>wasmtime</code> is our fork of the Bytecode Alliance’s wasmtime (it’s the Wasm compiler and runtime).</li>
+<li><code>wasm-tools</code> is our fork of the Bytecode Alliance’s wasm-tools (it’s binary parser and typechecker used by wasmtime).</li>
+</ul>
+<p>The entire source code of this artifact is available on GitHub (https://github.com/wasmfx/oopsla23-artifx).</p>
+<h2 id="getting-started-guide">Getting Started Guide</h2>
+<p>To conduct the experiments you will need the following software components:</p>
+<ol type="1">
+<li>An x86_64 Debian 11 (bookworm) or equivalent Linux system (e.g. Ubuntu 22.04 LTS).</li>
+<li>The WebAssembly reference interpreter.</li>
+<li>Our WasmFX extension patch to the reference interpreter.</li>
+<li>The wasm-tools and wasmtime toolchains from the Bytecode Alliance.</li>
+<li>Our WasmFX extension patches to wasm-tools and wasmtime.</li>
+<li>The WASI SDK version 20.0 for Linux</li>
+<li>Go version 18</li>
+<li>TinyGo version 0.26</li>
+<li>The Clang toolchain version 14</li>
+<li>The Rust toolchain version 1.71</li>
+<li>OPAM version 2.1.2</li>
+<li>WebAssembly Binary Toolkit (wabt) version 1.0.32-1</li>
+<li>Binaryen version 108-1</li>
+<li>Rakudo version 2022.12-1</li>
+<li>GNU time</li>
+<li>Our benchmark suite</li>
+</ol>
+<p>For your convenience, we provide all of the above in a <a href="https://www.docker.com/">Docker</a> image. Please consult <a href="https://docs.docker.com/engine/install/">the official Docker documentation</a> for instructions on to install and configure Docker for your operating system.</p>
+<p><strong>Note</strong> To successfully run the experiments you will also need an x86_64 machine (or emulator) as our WasmFX extension to wasmtime is currently only compatible with x86_64 architectures.</p>
+<p><strong>Note</strong> Every machine that we have used for testing this artifact has had at minimum 8GB of RAM.</p>
+<h2 id="step-by-step-instructions">Step by Step Instructions</h2>
+<p>The following instructions assume you want to evaluate the artifact using the provided Docker image. If you want to build the artifact from source, then please follow the detailed instructions in the <a href="./Dockerfile">Dockerfile</a>.</p>
+<h3 id="step-0-unpack-the-artifact">Step 0: Unpack the artifact</h3>
+<p>If you obtained the artifact via the distributed tar-ball, then you must first unpack it</p>
+<pre><code>$ tar xvf paper-195.tar.gz</code></pre>
+<p>Alternatively, you may check it out from the git repository</p>
+<pre><code>$ git clone https://github.com/wasmfx/oopsla23-artifx.git paper-195</code></pre>
+<p>In either case, you should now have the following files on your machine</p>
+<pre><code>$ cd paper-195 &amp;&amp; ls -m
+benchmarks, Dockerfile, LICENSE, patch, README.md, run-experiments.sh, run-tests.sh,
+run-tests.sh.reference, tinygo, wasm-spec, wasmtime, wasm-tools</code></pre>
+<h3 id="step-1-obtain-the-docker-image">Step 1: Obtain the Docker Image</h3>
+<p>You can either download a prepared image or build it yourself from scratch.</p>
+<h4 id="downloading-the-image">Downloading the image</h4>
+<p>You can download the prepared image (built for x86_64 architectures) by issuing the following command</p>
+<pre><code>$ docker pull wasmfx/oopsla23-artifact:latest
+$ docker tag wasmfx/oopsla23-artifact wasmfx-oopsla23-artifact</code></pre>
+<p>The last command creates an alias for the image, which we will use exclusively throughout this guide.</p>
+<h4 id="building-from-source">Building from Source</h4>
+<p>To build the image from scratch you may build provided <a href="./Dockerfile">Dockerfile</a> build script. Depending on your hardware the build process may take upwards an hour, though, any reasonable modern workstation ought to be able to finish the process within 5 minutes. If you are using an x86_64 machine, then you may build the image by issuing the following command</p>
+<pre><code>$ docker build -t wasmfx-oopsla23-artifact .</code></pre>
+<p>If you are on an Arm-powered machine, then you may try to cross build the image</p>
+<pre><code>$ docker buildx build --platform linux/amd64 -t wasmfx-oopsla23-artifact .</code></pre>
+<p>In either case, if the build is successful then the last line of the console ought to read</p>
+<pre><code>Successfully tagged wasmfx-oopsla23-artifact:latest</code></pre>
+<h3 id="step-2-launch-the-image-inside-a-container">Step 2: Launch the Image inside a Container</h3>
+<p>To test image, we can launch it inside a container. If you are on an x86_64 machine, then invoke the following command to launch the image and drop you into an interactive shell</p>
+<pre><code>$ docker run -it wasmfx-oopsla23-artifact /bin/bash</code></pre>
+<p>If you are on an Arm-powered device then you may try to use the emulation layer, e.g.</p>
+<pre><code>$ docker run --platform linux/amd64 -it wasmfx-oopsla23-artifact /bin/bash</code></pre>
+<p>Nonetheless, once the shell has been launched you should be able to see the following files</p>
+<pre><code># ls -m
+go-compile-and-size, run-experiments.sh, run-tests.sh, switching-throughput, tinygo, wasm-spec, wasm-tools, wasmtime</code></pre>
+<p>To exit the container again, simply type</p>
+<pre><code># exit</code></pre>
+<h3 id="step-3-run-the-testsuites-optional">Step 3: Run the Testsuites (Optional)</h3>
+<p>As a soundness check you may want to run the testsuites of the reference interpreter, wasm-tools, and wasmtime to check that they have been built and installed properly during Step 1. We provide a test runner script, which automates the process. Though, do note that the first time the script is run (in the current container instance) it will trigger the debug builds of wasm-tools and wasmtime. To run the testsuite simply invoke</p>
+<pre><code>$ docker run -t wasmfx-oopsla23-artifact ./run-tests.sh</code></pre>
+<p>A successful run should not report any errors. The file <a href="./run-tests.sh.reference">run-tests.sh.reference</a> contains an output of the process obtained on the reference machine. Though, do note that this output may differ slightly from the one you just obtained, as the wasmtime testsuite is multi-threaded, meaning the order of test result reports is not deterministic.</p>
+<h3 id="step-4-run-the-experiments">Step 4: Run the Experiments</h3>
+<p>We provide a experiment runner script which runs the experiments described in Section 5.1 of the paper. You may launch this script by running</p>
+<pre><code>$ docker run -t wasmfx-oopsla23-artifact ./run-experiments.sh</code></pre>
+<p>The output of this command should look similar to the following</p>
+<pre><code>bespoke opt
+1.06 14116
+1.08 14172
+1.08 13964
+1.05 13912
+1.03 14308
+asyncify opt
+0.49 63936
+0.50 64048
+0.48 63988
+0.49 63852
+0.52 63976
+wasmfx opt
+2.28 63252
+2.34 63668
+2.45 63660
+2.35 63904
+2.36 63384
+compiling main-kjp.go with wasmfx
+compiling main-kjp.go with asyncify
+-rwxr-xr-x 1 root root 479K Jul 14 18:05 main-kjp-asyncify.wasm
+-rw-r--r-- 1 root root 152K Jul 14 18:05 main-kjp-wasmfx.wasm
+compiling coroutines.go with wasmfx
+compiling coroutines.go with asyncify
+-rwxr-xr-x 1 root root  52K Jul 14 18:05 coroutines-asyncify.wasm
+-rw-r--r-- 1 root root 7.2K Jul 14 18:05 coroutines-wasmfx.wasm</code></pre>
+<p>The <code>bespoke opt</code>, <code>asyncify opt</code>, and <code>wasmfx opt</code> entries display the run time and memory consumption measurements which forms the basis for Figure 7a in Section 5.1 of the paper. There are two columns of data under each entry. The first column is the elapsed wall time in seconds, whilst the second column is the memory footprint in bytes.</p>
+<p>Note that the measurements will differ slightly from the ones reported in the paper, in particular for the case of the run time performance of WasmFX, as the version of the compiler and runtime included here has a performance regression due to our own refactorings and upstream changes. Another side effect of these changes is that the memory footprint of the asyncify programs has been improved. We will update the numbers accordingly in the camera-ready version of the paper.</p>
+<p>The file size column in file listings under <code>compiling main-kjp.go with asyncify</code> and <code>compiling coroutines.go with asyncify</code> form the basis for the data in Figure 7b in Section 5.1 of the paper.</p>
+<h2 id="step-5-modifying-the-experiment-parameters-optional">Step 5: Modifying the Experiment Parameters (Optional)</h2>
+<p>To modify the parameters of the coroutines benchmark from Figure 7a in Section 5.1 of the paper, you should first install your favourite editor, e.g.</p>
+<pre><code>$ docker run -it wasmfx-oopsla23-artifact /bin/bash
+# apt install emacs-nox</code></pre>
+<p>Afterwards navigate to the directory <code>switching-throughput</code> and open the file <code>parameters.h</code></p>
+<pre><code># cd switching-throughput
+# emacs parameters.h</code></pre>
+<p>Here you may modify the right hand side of each variable assignment to change the benchmark parameters.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a><span class="co">// This parameter controls the total number of spawned coroutines.</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a><span class="dt">static</span> <span class="dt">const</span> <span class="dt">unsigned</span> <span class="dt">int</span> NUM_COROUTINES = <span class="dv">10000000</span>;</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true"></a><span class="co">// This parameter controls the number of coroutines that may run</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true"></a><span class="co">// simultaneously.</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true"></a><span class="dt">static</span> <span class="dt">const</span> <span class="dt">unsigned</span> <span class="dt">int</span> NUM_SIMULTANEOUS = <span class="dv">10000</span>;</span></code></pre></div>
+<p>Save your changes (in Emacs C-x C-s) and quit the editor (in Emacs C-x C-c). And then rebuild and run the benchmarks</p>
+<pre><code># make clean &amp;&amp; make all
+# ../run-experiments.sh</code></pre>
+<p>To compile another TinyGo program, copy it into <code>go-compile-and-size</code> directory. Suppose your TinyGo program is named <code>awesome.go</code> then you can compile with Asyncify and WasmFX as follows</p>
+<pre><code># cd go-compile-and-size
+# tinygo build -target wasi -o awesome-asyncify.wasm awesome.go
+# ./e2e.sh awesome.go
+# ls -m | grep awesome
+awesome.go, awesome-asyncify.wasm, awesome-wasmfx.wasm</code></pre>
+<h2 id="inspecting-the-source-files">Inspecting the Source Files</h2>
+<p>This artifact contains a lot of code. Most of this code is written by the open source community. We have chosen to include our changesets to the toolchains in the directory <a href="./patch">patch/</a>. These changesets were obtained by running <code>git diff</code> of our forks against the, at the time of writing, respective recent upstream main branch.</p>
+<ul>
+<li><a href="./patch/spec-wasmfx.patch">patch/spec-wasmfx.patch</a> contains the changeset for our WasmFX extension to the WebAssembly reference interpreter <strong>with the function references extension</strong>. Note our changeset also includes parts of the exception handling extension.</li>
+<li><a href="./patch/wasm-tools-wasmfx.patch">patch/wasm-tools-wasmfx.patch</a> contains the changeset for our WasmFX extension to wasm-tools.</li>
+<li><a href="./patch/wasmtime-wasmfx.patch">patch/wasmtime-wasmfx.patch</a> contains the changeset for our WasmFX extension to wasmtime.</li>
+<li><a href="./patch/tinygo-wasmfx.patch">patch/tinygo-wasmfx.patch</a> contains the changeset to make the TinyGo compiler emit WasmFX instructions.</li>
+</ul>
+<p>If you want to look at the source files themselves, then the following enumeration highlights the most relevant files</p>
+<ul>
+<li>Reference interpreter
+<ul>
+<li><code>wasm-spec/interpreter/text/parser.mly</code>: the parser (look for productions involving keywords <code>resume</code> and <code>cont</code>).</li>
+<li><code>wasm-spec/interpreter/syntax/{ast,types}.ml</code>: the abstract syntax for terms and types.</li>
+<li><code>wasm-spec/interpreter/valid/valid.ml</code>: the type checker.</li>
+<li><code>wasm-spec/interpreter/binary/encode.ml</code>: the binary encoder.</li>
+<li><code>wasm-spec/interpreter/exec/eval.ml</code>: the evaluator.</li>
+</ul></li>
+<li>wasm-tools
+<ul>
+<li><code>wasm-tools/crates/wasmparser/src/core/types.rs</code>: the type structure.</li>
+<li><code>wasm-tools/crates/wasmparser/src/validator/core/operators.rs</code>: the type checker.</li>
+<li><code>wasm-tools/crates/wasmparser/src/lib.rs</code>: a macro for generating the abstract term syntax.</li>
+</ul></li>
+<li>wasmtime
+<ul>
+<li><code>wasmtime/cranelift/wasm/src/code_translator.rs</code>: the translator from wasm-tools term syntax to the cranelift intermediate representation.</li>
+<li><code>wasmtime/crates/cranelift/src/func_environ.rs</code>: translation utilities.</li>
+<li><code>wasmtime/crates/runtime/src/continuation.rs</code>: the implementation of continuation related libcalls.</li>
+<li><code>wasmtime/crates/fibre/src/unix/x86_64.rs</code>: the x86_64 code for stack switching.</li>
+<li><code>wasmtime/crates/types/src/lib.rs</code>: mapping from wasm-tools types to wasmtime types.</li>
+</ul></li>
+</ul>
+<h2 id="the-wasmfx-toolchain">The WasmFX Toolchain</h2>
+<p>Our work does not include a fully developed toolchain. Instead, we leverage existing toolchains by performing textual substitution on their outputs. The “compiler” (it is really an oversized regex) for our benchmarks operate on wast files and relies on the assumption that certain names are present. Therefore it is important that toolchains to not optimise occurrences of these names away.</p>
+<p>For example, in the <a href="./benchmarks/c/Makefile">benchmarks/c/Makefile</a> the rule for generating the precompiled module <code>wasmfx.cwasm</code> is defined as follows</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true"></a><span class="dt">CC</span><span class="ch">=</span><span class="st">wasi-sdk-20.0/bin/clang -O3</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true"></a><span class="dt">WTC</span><span class="ch">=</span><span class="st">wasmtime compile</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true"></a><span class="dv">wasmfx.wat:</span><span class="dt"> coroutines.c wasmfx.pl</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true"></a>    <span class="ch">$(</span><span class="dt">CC</span><span class="ch">)</span> coroutines.c -o wasmfx.wasm -Wl,--allow-undefined,--export=a_coroutine</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true"></a>    wasm2wat wasmfx.wasm &gt;wasmfx_import.wat</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true"></a>    raku wasmfx.pl &lt;wasmfx_import.wat &gt;wasmfx.wat</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true"></a><span class="dv">wasmfx.cwasm:</span><span class="dt"> wasmfx.wat</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true"></a>    wasm -d -i wasmfx.wat -o wasmfx.wasm</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true"></a>    <span class="ch">$(</span><span class="dt">WTC</span><span class="ch">)</span> --wasm-features typed-continuations,function-references,exceptions wasmfx.wasm</span></code></pre></div>
+<p>The line <code>$(CC) coroutines.c ...</code> contains the option <code>--export=a_coroutines</code> which makes sure the procedure <code>a_coroutine</code> from <a href="./benchmarks/c/coroutines.c">benchmarks/c/coroutines.c</a> is publicly visible. The output is an optimised binary. Thus we use the utility <code>wasm2wat</code> (from wabt) to turn the binary into a textual Wasm file named <code>wasmfx_import.wat</code> (see the perl script <a href="./benchmarks/c/wasmfx.pl">benchmarks/c/wasmfx.pl</a> for the glorious details). The next line applies the Perl script <code>wasmfx.pl</code> to textually substitute in the required runtime components. The resulting <code>wasmfx.wat</code> is translated back into binary file using the WasmFX reference interpreter (called <code>wasm</code> in the above listing). Finally, we use wasmtime to precompile the Wasm binary. Obviously, this is a brittle “toolchain” as it relies on the internal naming scheme of certain tools and on certain optimisations not being applied.</p>
+<p>In the future we intend to develop a robust toolchain for compiling some high-level language to Wasm extended with WasmFX instructions.</p>
+<p>Our patched TinyGo compiler works as follows</p>
+<ol type="1">
+<li>Use the JavaScript runtime for WASI with a stub event handler.</li>
+<li>Skip the Asyncify pass on Wasm modules produced by the TinyGo.</li>
+<li>Instead, run the Perl script <a href="./tinygo/effects.pl">tinygo/effects.pl</a>. It:</li>
+</ol>
+<ul>
+<li>Replaces the runtime scheduler with a WasmFX-powered scheduler similar to the one in Section 2.5 of the paper.</li>
+<li>Replaces the runtime function <code>task.Pause</code> with the WasmFX instruction <code>suspend $scheduler</code> where <code>$scheduler</code> is the control tag for transferring control to the WasmFX-powered scheduler.</li>
+<li>Replaces the runtime function <code>task.start</code> with both the WasmFX instruction <code>cont.new</code> and runtime function <code>enqueue</code> (the latter enqueues the continuation).</li>
+</ul>
+<h2 id="reference-machine-specification">Reference Machine Specification</h2>
+<pre><code>$ docker --version
+Docker version 20.10.21, build 20.10.21-0ubuntu1~22.04.3
+$ uname -rsvpo
+Linux 5.19.0-46-generic #47~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Wed Jun 21 15:35:31 UTC 2 x86_64 GNU/Linux
+$ cat /etc/debian_version
+bookworm/sid
+$ free -m -t
+               total        used        free      shared  buff/cache   available
+Mem:           31997        6131       14927          85       10938       25327
+Swap:          16383        7815        8568
+Total:         48381       13947       23496
+$ cat /proc/cpuinfo
+processor   : 0
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2877.493
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 0
+cpu cores   : 12
+apicid      : 0
+initial apicid  : 0
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 1
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2200.000
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 1
+cpu cores   : 12
+apicid      : 2
+initial apicid  : 2
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 2
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2200.000
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 2
+cpu cores   : 12
+apicid      : 4
+initial apicid  : 4
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 3
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2877.365
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 3
+cpu cores   : 12
+apicid      : 6
+initial apicid  : 6
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 4
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2200.000
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 4
+cpu cores   : 12
+apicid      : 8
+initial apicid  : 8
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 5
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2972.402
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 5
+cpu cores   : 12
+apicid      : 10
+initial apicid  : 10
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 6
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2199.412
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 8
+cpu cores   : 12
+apicid      : 16
+initial apicid  : 16
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 7
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2198.822
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 9
+cpu cores   : 12
+apicid      : 18
+initial apicid  : 18
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 8
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2198.539
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 10
+cpu cores   : 12
+apicid      : 20
+initial apicid  : 20
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 9
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2199.127
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 11
+cpu cores   : 12
+apicid      : 22
+initial apicid  : 22
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 10
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2199.217
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 12
+cpu cores   : 12
+apicid      : 24
+initial apicid  : 24
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 11
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2199.677
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 13
+cpu cores   : 12
+apicid      : 26
+initial apicid  : 26
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 12
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2200.000
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 0
+cpu cores   : 12
+apicid      : 1
+initial apicid  : 1
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 13
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2200.000
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 1
+cpu cores   : 12
+apicid      : 3
+initial apicid  : 3
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 14
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2200.000
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 2
+cpu cores   : 12
+apicid      : 5
+initial apicid  : 5
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 15
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2862.367
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 3
+cpu cores   : 12
+apicid      : 7
+initial apicid  : 7
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 16
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 4197.992
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 4
+cpu cores   : 12
+apicid      : 9
+initial apicid  : 9
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 17
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2200.000
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 5
+cpu cores   : 12
+apicid      : 11
+initial apicid  : 11
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 18
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2599.963
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 8
+cpu cores   : 12
+apicid      : 17
+initial apicid  : 17
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 19
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2878.316
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 9
+cpu cores   : 12
+apicid      : 19
+initial apicid  : 19
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 20
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2204.013
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 10
+cpu cores   : 12
+apicid      : 21
+initial apicid  : 21
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 21
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 3364.610
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 11
+cpu cores   : 12
+apicid      : 23
+initial apicid  : 23
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 22
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 3598.710
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 12
+cpu cores   : 12
+apicid      : 25
+initial apicid  : 25
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+
+processor   : 23
+vendor_id   : AuthenticAMD
+cpu family  : 25
+model       : 33
+model name  : AMD Ryzen 9 5900X 12-Core Processor
+stepping    : 0
+microcode   : 0xa201016
+cpu MHz     : 2504.055
+cache size  : 512 KB
+physical id : 0
+siblings    : 24
+core id     : 13
+cpu cores   : 12
+apicid      : 27
+initial apicid  : 27
+fpu     : yes
+fpu_exception   : yes
+cpuid level : 16
+wp      : yes
+flags       : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+bugs        : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+bogomips    : 7399.89
+TLB size    : 2560 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 48 bits physical, 48 bits virtual
+power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]</code></pre>
