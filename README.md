@@ -337,7 +337,7 @@ enumeration highlights the most relevant files
   - `wasm-tools/crates/wasmparser/src/validator/core/operators.rs`: the type checker.
   - `wasm-tools/crates/wasmparser/src/lib.rs`: a macro for generating the abstract term syntax.
 * wasmtime
-  - `wasmtime/cranelift/wasm/src/code_translator.rs`: translator from wasm-tools term syntax to the cranelift intermediate representation.
+  - `wasmtime/cranelift/wasm/src/code_translator.rs`: the translator from wasm-tools term syntax to the cranelift intermediate representation.
   - `wasmtime/crates/cranelift/src/func_environ.rs`: translation utilities.
   - `wasmtime/crates/runtime/src/continuation.rs`: the implementation of continuation related libcalls.
   - `wasmtime/crates/fibre/src/unix/x86_64.rs`: the x86_64 code for stack switching.
