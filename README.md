@@ -24,7 +24,9 @@ The artifact is structured as follows
    container running the provided Docker image.
 3. [Inspecting the Source Files](#inspecting-the-source-files)
    highlights some relevant source files with our WasmFX additions.
-4. [Reference Machine Specification](#reference-machine-specification)
+4. [The WasmFX Toolchain](#the-wasmfx-toolchain) describes how our
+   "toolchain" works.
+5. [Reference Machine Specification](#reference-machine-specification)
    contains some detailed information about the reference machine used
    to conduct the experiments.
 
@@ -360,7 +362,50 @@ enumeration highlights the most relevant files
   - `wasmtime/crates/fibre/src/unix/x86_64.rs`: the x86_64 code for stack switching.
   - `wasmtime/crates/types/src/lib.rs`: mapping from wasm-tools types to wasmtime types.
 
+## The WasmFX Toolchain
 
+Our work does not include a fully developed toolchain. Instead, we
+leverage existing toolchains by performing textual substitution on
+their outputs. The "compiler" (it is really an oversized regex) for
+our benchmarks operate on wast files and relies on the assumption that
+certain names are present. Therefore it is important that toolchains
+to not optimise occurrences of these names away.
+
+For example, in the [benchmarks/c/Makefile](./benchmarks/c/Makefile)
+the rule for generating the precompiled module `wasmfx.cwasm` is
+defined as follows
+
+```Makefile
+CC=wasi-sdk-20.0/bin/clang -O3
+WTC=wasmtime compile
+
+wasmfx.wat: coroutines.c wasmfx.pl
+	$(CC) coroutines.c -o wasmfx.wasm -Wl,--allow-undefined,--export=a_coroutine
+	wasm2wat wasmfx.wasm >wasmfx_import.wat
+	raku wasmfx.pl <wasmfx_import.wat >wasmfx.wat
+
+wasmfx.cwasm: wasmfx.wat
+	wasm -d -i wasmfx.wat -o wasmfx.wasm
+	$(WTC) --wasm-features typed-continuations,function-references,exceptions wasmfx.wasm
+```
+
+The line `$(CC) coroutines.c ...` contains the option
+`--export=a_coroutines` which makes sure the procedure `a_coroutine`
+from [benchmarks/c/coroutines.c](./benchmarks/c/coroutines.c) is
+publicly visible. The output is an optimised binary. Thus we use the
+utility `wasm2wat` (from wabt) to turn the binary into a textual Wasm
+file named `wasmfx_import.wat` (see the perl script
+[benchmarks/c/wasmfx.pl](./benchmarks/c/wasmfx.pl) for the glorious
+details). The next line applies the Perl script `wasmfx.pl` to
+textually substitute in the required runtime components. The resulting
+`wasmfx.wat` is translated back into binary file using the WasmFX
+reference interpreter (called `wasm` in the above listing). Finally,
+we use wasmtime to precompile the Wasm binary. Obviously, this is a
+brittle "toolchain" as it relies on the internal naming scheme of
+certain tools and on certain optimisations not being applied.
+
+In the future we intend to develop a robust toolchain for compiling
+some high-level language to Wasm extended with WasmFX instructions.
 
 ## Reference Machine Specification
 
