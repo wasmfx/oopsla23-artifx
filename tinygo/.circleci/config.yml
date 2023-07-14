@@ -1,0 +1,128 @@
+version: 2.1
+
+commands:
+  submodules:
+    steps:
+      - run:
+          name: "Pull submodules"
+          command: git submodule update --init
+  install-xtensa-toolchain:
+    parameters:
+      variant:
+        type: string
+    steps:
+      - run:
+          name: "Install Xtensa toolchain"
+          command: |
+            curl -L https://github.com/espressif/crosstool-NG/releases/download/esp-2020r2/xtensa-esp32-elf-gcc8_2_0-esp-2020r2-<<parameters.variant>>.tar.gz -o xtensa-esp32-elf-gcc8_2_0-esp-2020r2-<<parameters.variant>>.tar.gz
+            sudo tar -C /usr/local -xf xtensa-esp32-elf-gcc8_2_0-esp-2020r2-<<parameters.variant>>.tar.gz
+            sudo ln -s /usr/local/xtensa-esp32-elf/bin/xtensa-esp32-elf-ld /usr/local/bin/xtensa-esp32-elf-ld
+            rm xtensa-esp32-elf-gcc8_2_0-esp-2020r2-<<parameters.variant>>.tar.gz
+  llvm-source-linux:
+    steps:
+      - restore_cache:
+          keys:
+            - llvm-source-14-v3
+      - run:
+          name: "Fetch LLVM source"
+          command: make llvm-source
+      - save_cache:
+          key: llvm-source-14-v3
+          paths:
+            - llvm-project/clang/lib/Headers
+            - llvm-project/clang/include
+            - llvm-project/compiler-rt
+            - llvm-project/lld/include
+            - llvm-project/llvm/include
+  hack-ninja-jobs:
+    steps:
+      - run:
+          name: "Hack Ninja to use less jobs"
+          command: |
+            echo -e '#!/bin/sh\n/usr/bin/ninja -j3 "$@"' > /go/bin/ninja
+            chmod +x /go/bin/ninja
+  build-binaryen-linux:
+    steps:
+      - restore_cache:
+          keys:
+            - binaryen-linux-v2
+      - run:
+          name: "Build Binaryen"
+          command: |
+            make binaryen
+      - save_cache:
+          key: binaryen-linux-v2
+          paths:
+            - build/wasm-opt
+  test-linux:
+    parameters:
+      llvm:
+        type: string
+      fmt-check:
+        type: boolean
+        default: true
+    steps:
+      - checkout
+      - submodules
+      - run:
+          name: "Install apt dependencies"
+          command: |
+            echo 'deb https://apt.llvm.org/buster/ llvm-toolchain-buster-<<parameters.llvm>> main' > /etc/apt/sources.list.d/llvm.list
+            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+            apt-get update
+            apt-get install --no-install-recommends -y \
+                llvm-<<parameters.llvm>>-dev \
+                clang-<<parameters.llvm>> \
+                libclang-<<parameters.llvm>>-dev \
+                lld-<<parameters.llvm>> \
+                gcc-avr \
+                avr-libc \
+                cmake \
+                ninja-build
+      - hack-ninja-jobs
+      - build-binaryen-linux
+      - restore_cache:
+          keys:
+            - go-cache-v3-{{ checksum "go.mod" }}-{{ .Environment.CIRCLE_PREVIOUS_BUILD_NUM }}
+            - go-cache-v3-{{ checksum "go.mod" }}
+      - llvm-source-linux
+      - run: go install -tags=llvm<<parameters.llvm>> .
+      - restore_cache:
+          keys:
+            - wasi-libc-sysroot-systemclang-v6
+      - run: make wasi-libc
+      - save_cache:
+          key: wasi-libc-sysroot-systemclang-v6
+          paths:
+            - lib/wasi-libc/sysroot
+      - when:
+          condition: <<parameters.fmt-check>>
+          steps:
+          - run:
+              # Do this before gen-device so that it doesn't check the
+              # formatting of generated files.
+              name: Check Go code formatting
+              command: make fmt-check
+      - run: make gen-device -j4
+      - run: make smoketest XTENSA=0
+      - save_cache:
+          key: go-cache-v3-{{ checksum "go.mod" }}-{{ .Environment.CIRCLE_BUILD_NUM }}
+          paths:
+            - ~/.cache/go-build
+            - /go/pkg/mod
+
+jobs:
+  test-llvm14-go118:
+    docker:
+      - image: golang:1.18-buster
+    steps:
+      - test-linux:
+          llvm: "14"
+    resource_class: large
+
+workflows:
+  test-all:
+    jobs:
+      # This tests our lowest supported versions of Go and LLVM, to make sure at
+      # least the smoke tests still pass.
+      - test-llvm14-go118

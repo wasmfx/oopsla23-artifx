@@ -1,0 +1,31 @@
+package foo:foo
+
+interface shared {
+  enum the-enum {
+    a
+  }
+}
+
+world w1 {
+  import foo: interface {
+    use shared.{the-enum}
+  }
+  import bar: interface {
+    use shared.{the-enum}
+  }
+}
+
+world w2 {
+  import foo: interface {
+    use shared.{the-enum}
+  }
+  export bar: interface {
+    use shared.{the-enum}
+  }
+}
+
+world w3 {
+  export bar: interface {
+    use shared.{the-enum}
+  }
+}

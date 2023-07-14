@@ -1,0 +1,104 @@
+name: Windows
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+      - release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - uses: brechtm/setup-scoop@v2
+        with:
+          scoop_update: 'false'
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          scoop install ninja binaryen
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.19'
+          cache: true
+      - name: Cache LLVM source
+        uses: actions/cache@v3
+        id: cache-llvm-source
+        with:
+          key: llvm-source-14-windows-v2
+          path: |
+            llvm-project/clang/lib/Headers
+            llvm-project/clang/include
+            llvm-project/compiler-rt
+            llvm-project/lld/include
+            llvm-project/llvm/include
+      - name: Download LLVM source
+        if: steps.cache-llvm-source.outputs.cache-hit != 'true'
+        run: make llvm-source
+      - name: Cache LLVM build
+        uses: actions/cache@v3
+        id: cache-llvm-build
+        with:
+          key: llvm-build-14-windows-v2
+          path: llvm-build
+      - name: Build LLVM
+        if: steps.cache-llvm-build.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          # fetch LLVM source
+          rm -rf llvm-project
+          make llvm-source
+          # build!
+          make llvm-build CCACHE=OFF
+          # Remove unnecessary object files (to reduce cache size).
+          find llvm-build -name CMakeFiles -prune -exec rm -r '{}' \;
+      - name: Cache wasi-libc sysroot
+        uses: actions/cache@v3
+        id: cache-wasi-libc
+        with:
+          key: wasi-libc-sysroot-v4
+          path: lib/wasi-libc/sysroot
+      - name: Build wasi-libc
+        if: steps.cache-wasi-libc.outputs.cache-hit != 'true'
+        run: make wasi-libc
+      - name: Install wasmtime
+        run: |
+          scoop install wasmtime
+      - name: Test TinyGo
+        shell: bash
+        run: make test GOTESTFLAGS="-v -short"
+      - name: Build TinyGo release tarball
+        shell: bash
+        run: make build/release -j4
+      - name: Make release artifact
+        shell: bash
+        working-directory: build/release
+        run: 7z -tzip a release.zip tinygo
+      - name: Publish release artifact
+        # Note: this release artifact is double-zipped, see:
+        # https://github.com/actions/upload-artifact/issues/39
+        # We can essentially pick one of these:
+        # - have a dobule-zipped artifact when downloaded from the UI
+        # - have a very slow artifact upload
+        # We're doing the former here, to keep artifact uploads fast.
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-double-zipped
+          path: build/release/release.zip
+      - name: Smoke tests
+        shell: bash
+        run: make smoketest TINYGO=$(PWD)/build/tinygo AVR=0 XTENSA=0
+      - name: Test stdlib packages
+        run: make tinygo-test
+      - name: Test stdlib packages on wasi
+        run: make tinygo-test-wasi-fast

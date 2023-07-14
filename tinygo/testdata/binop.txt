@@ -1,0 +1,76 @@
+string equality
+true
+false
+false
+true
+string inequality
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+true
+false
+false
+true
+h < h false
+h <= h true
+h == h true
+h >= h true
+h > h false
+array equality
+true
+false
+false
+false
+false
+true
+struct equality
+true
+false
+false
+false
+false
+true
+true
+true
+blank fields in structs
+true
+false
+true
+false
+complex numbers
+true
+false
+false
+false
+true
+true
+false
+false
+false
+true
+true
+true
+shifts
+true
+true
+true
+true
+true
+true
+true
+constant number
+0
+-2147483648 / -1: -2147483648
+-2147483648 % -1: 0
+interface equality
+a==b false
+b==b2 true

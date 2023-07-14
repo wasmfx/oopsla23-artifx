@@ -1,0 +1,87 @@
+[package]
+name = "wasm-tools-fuzz"
+version = "0.0.1"
+publish = false
+edition.workspace = true
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+anyhow = { workspace = true }
+arbitrary = { workspace = true }
+env_logger = { workspace = true }
+libfuzzer-sys = { workspace = true }
+log = { workspace = true }
+tempfile = "3.0"
+wasm-mutate = { path = "../crates/wasm-mutate" }
+wasm-smith = { path = "../crates/wasm-smith" }
+wasmparser = { path = "../crates/wasmparser" }
+wasmprinter = { path = "../crates/wasmprinter" }
+wasmtime = { workspace = true, optional = true }
+wast = { path = "../crates/wast" }
+wat = { path = "../crates/wat" }
+wit-parser = { path = "../crates/wit-parser" }
+wit-smith = { path = "../crates/wit-smith" }
+wit-component = { path = "../crates/wit-component", features = ['dummy-module'] }
+wasm-encoder = { path = "../crates/wasm-encoder" }
+
+[lib]
+test = false
+doctest = false
+
+[[bin]]
+name = "text-parser"
+path = "fuzz_targets/text-parser.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "validate"
+path = "fuzz_targets/validate.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "print"
+path = "fuzz_targets/print.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "roundtrip"
+path = "fuzz_targets/roundtrip.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "incremental-parse"
+path = "fuzz_targets/incremental-parse.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "validate-valid-module"
+path = "fuzz_targets/validate-valid-module.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mutate"
+path = "fuzz_targets/mutate.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "no-traps"
+path = "fuzz_targets/no-traps.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "roundtrip-wit"
+path = "fuzz_targets/roundtrip-wit.rs"
+test = false
+doc = false

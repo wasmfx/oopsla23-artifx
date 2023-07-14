@@ -1,0 +1,6 @@
+stdin:  /dev/stdin
+stdout: /dev/stdout
+stderr: /dev/stderr
+pseudorandom number: 1298498081
+strings.IndexByte: 2
+strings.Replace: An-example-string

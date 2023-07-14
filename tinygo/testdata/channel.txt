@@ -1,0 +1,35 @@
+len, cap of channel: 1 2 false
+len, cap of channel: 0 0 false
+recv from open channel: 1 true
+received num: 2
+received num: 3
+slept
+received num: 4
+received num: 5
+received num: 6
+received num: 7
+received num: 8
+recv from closed channel: 0 false
+complex128: (+7.000000e+000+1.050000e+001i)
+sum of n: 149
+sum: 25
+sum: 29
+sum: 33
+sum(100): 4950
+deadlocking
+select no-op
+after no-op
+sum: 5
+did send one
+select one n: 0
+select n from chan: 55
+select n from closed chan: 0
+select send
+sum: 235
+non-concurrent channel recieve: 1
+non-concurrent channel recieve: 2
+closed buffered channel recieve: 3
+closed buffered channel recieve: 4
+closed buffered channel recieve: 0
+hybrid buffered channel recieve: 2
+blocking select sum: 3

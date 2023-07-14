@@ -1,0 +1,35 @@
+(component
+  (type (;0;)
+    (component
+      (type (;0;)
+        (instance
+          (type (;0;) u32)
+          (export (;1;) "a" (type (eq 0)))
+          (export (;2;) "b" (type (eq 1)))
+          (export (;3;) "c" (type (eq 2)))
+        )
+      )
+      (export (;0;) (interface "foo:foo/foo") (instance (type 0)))
+      (alias export 0 "c" (type (;1;)))
+      (type (;2;)
+        (instance
+          (alias outer 1 1 (type (;0;)))
+          (export (;1;) "c" (type (eq 0)))
+        )
+      )
+      (export (;1;) (interface "foo:foo/bar") (instance (type 2)))
+      (alias export 1 "c" (type (;3;)))
+      (type (;4;)
+        (instance
+          (alias outer 1 3 (type (;0;)))
+          (export (;1;) "c" (type (eq 0)))
+        )
+      )
+      (export (;2;) (interface "foo:foo/baz") (instance (type 4)))
+    )
+  )
+  (@producers
+    (processed-by "wit-component" "$CARGO_PKG_VERSION")
+  )
+  (export (;1;) (interface "foo:foo/wit") (type 0))
+)

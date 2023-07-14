@@ -1,0 +1,16 @@
+package foo:foo
+
+interface i {
+  record some-type {
+  }
+
+  the-func: func() -> some-type
+}
+
+
+world module {
+  use i.{some-type as other-name}
+
+  import i
+  export i
+}

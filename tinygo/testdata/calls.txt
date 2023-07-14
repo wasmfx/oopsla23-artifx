@@ -1,0 +1,18 @@
+hello from function pointer: 5
+deferring...
+Thing.Print: foo arg: bar
+...run as defer 3
+...run closure deferred: 4
+...run as defer 1
+...exported defer
+loop 3
+loop 2
+loop 1
+loop 0
+...extracted defer func  1
+Called the correct function. i =  1
+bound method: foo
+thing inside closure: foo
+inside fp closure: foo 3
+Thing.Print:  arg: functional args 1
+Thing.Print: named thing arg: functional args 2

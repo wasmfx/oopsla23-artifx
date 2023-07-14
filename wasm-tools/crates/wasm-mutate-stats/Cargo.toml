@@ -1,0 +1,23 @@
+[package]
+name = "wasm-mutate-stats"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+arbitrary = { workspace = true }
+num_cpus = { workspace = true }
+rand = { workspace = true }
+wasm-mutate = { workspace = true }
+wasmprinter = { workspace = true }
+wasmparser = { workspace = true }
+wasmtime = { workspace = true }
+env_logger = { workspace = true }
+itertools = "0.10.0"
+clap = { workspace = true }
+log = { workspace = true }
+
+[lib]
+doctest = false
+test = false

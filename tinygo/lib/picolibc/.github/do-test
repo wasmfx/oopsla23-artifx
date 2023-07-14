@@ -1,0 +1,11 @@
+#!/bin/sh
+CONFIGURE=$1
+DIR=$2
+shift
+shift
+
+mkdir $DIR
+cd $DIR
+../scripts/$CONFIGURE -Dwerror=true "$@"
+cat meson-logs/*
+ninja && meson test -v

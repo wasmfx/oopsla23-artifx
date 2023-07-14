@@ -1,0 +1,82 @@
+map length: 2
+map read: answer = 42
+  answer = 42
+  foo = 3
+map length: 1
+map read: data = 3
+  data = 3
+map length: 12
+map read: three = 3
+  eight = 8
+  eleven = 11
+  five = 5
+  four = 4
+  nine = 9
+  one = 1
+  seven = 7
+  six = 6
+  ten = 10
+  three = 3
+  twelve = 12
+  two = 2
+map length: 12
+map read: ten = 10
+  eight = 8
+  eleven = 11
+  five = 5
+  four = 4
+  nine = 9
+  one = 1
+  seven = 7
+  six = 6
+  ten = 10
+  three = 3
+  twelve = 12
+  two = 2
+map length: 11
+map read: seven = 7
+  eight = 8
+  eleven = 11
+  five = 5
+  four = 4
+  nine = 9
+  one = 1
+  seven = 7
+  ten = 10
+  three = 3
+  twelve = 12
+  two = 2
+lookup with comma-ok: eight 8 true
+lookup with comma-ok: nokey 0 false
+false true 2
+true false 0
+nilmap: 0
+4
+42
+nilbinmap: 0
+4321
+5555
+itfMap[3]: 0
+itfMap[3.14]: 3
+itfMap[8]: 8
+itfMap[uint8(8)]: 80
+itfMap["eight"]: 800
+itfMap[[2]int{5, 2}]: 52
+itfMap[true]: 1
+itfMap[8]: 0
+itfMap: found key "eight": 800
+floatMap[42]: 84
+floatMap[43]: 0
+floatMap[42]: 0
+floatMap key, value: +3.140000e+000 6
+structMap[{"tau", 6.28}]: 5
+structMap[{"Tau", 6.28}]: 0
+structMap[{"tau", 3.14}]: 0
+structMap[{"tau", 6.28}]: 0
+tested preallocated map
+tested growing of a map
+2
+2
+2
+2
+done

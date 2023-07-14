@@ -1,0 +1,6 @@
+instantiations:
+  $input:
+    arguments:
+      a:
+        instance: a
+        export: x

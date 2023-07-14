@@ -1,0 +1,17 @@
+[package]
+name = "fuzz-stats"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+arbitrary = { workspace = true }
+num_cpus = { workspace = true }
+rand = { workspace = true }
+wasm-smith = { workspace = true }
+wasmtime = { workspace = true }
+
+[lib]
+doctest = false
+test = false

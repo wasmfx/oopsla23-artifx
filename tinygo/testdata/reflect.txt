@@ -1,0 +1,416 @@
+matching types
+true
+false
+false
+false
+false
+false
+
+values of interfaces
+reflect type: bool
+  bool: true
+reflect type: bool
+  bool: false
+reflect type: int
+  int: 2000
+reflect type: int
+  int: -2000
+reflect type: uint
+  uint: 2000
+reflect type: int8
+  int: -3
+reflect type: int8
+  int: 3
+reflect type: uint8
+  uint: 200
+reflect type: int16
+  int: -300
+reflect type: int16
+  int: 300
+reflect type: uint16
+  uint: 50000
+reflect type: int32
+  int: 7340032
+reflect type: int32
+  int: -7340032
+reflect type: uint32
+  uint: 7340032
+reflect type: int64
+  int: 9895604649984
+reflect type: int64
+  int: -9895604649984
+reflect type: uint64
+  uint: 9895604649984
+reflect type: uintptr
+  uint: 12345
+reflect type: float32
+  float: +3.140000e+000
+reflect type: float64
+  float: +3.140000e+000
+reflect type: complex64
+  complex: (+1.200000e+000+3.000000e-001i)
+reflect type: complex128
+  complex: (+1.300000e+000+4.000000e-001i)
+reflect type: int
+  int: 32
+reflect type: string
+  string: foo 3
+  reflect type: uint8
+    uint: 102
+  reflect type: uint8
+    uint: 111
+  reflect type: uint8
+    uint: 111
+reflect type: unsafe.Pointer
+  pointer: true
+reflect type: chan
+  chan: int
+  nil: true
+reflect type: chan
+  chan: int
+  nil: true
+reflect type: ptr
+  pointer: true int
+  nil: false
+  reflect type: int settable=true addrable=true
+    int: 0
+reflect type: ptr
+  pointer: true interface
+  nil: false
+  reflect type: interface settable=true addrable=true
+    interface
+    nil: true
+reflect type: ptr
+  pointer: true int
+  nil: false
+  reflect type: int settable=true addrable=true
+    int: 42
+reflect type: ptr
+  pointer: true int
+  nil: false
+  reflect type: int settable=true addrable=true
+    int: 0
+reflect type: slice comparable=false
+  slice: uint8 3 3
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: uint8 settable=true addrable=true
+    uint: 1
+  indexing: 1
+  reflect type: uint8 settable=true addrable=true
+    uint: 2
+  indexing: 2
+  reflect type: uint8 settable=true addrable=true
+    uint: 3
+reflect type: slice comparable=false
+  slice: uint8 2 5
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: uint8 settable=true addrable=true
+    uint: 0
+  indexing: 1
+  reflect type: uint8 settable=true addrable=true
+    uint: 0
+reflect type: slice comparable=false
+  slice: int32 2 2
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: int32 settable=true addrable=true
+    int: 3
+  indexing: 1
+  reflect type: int32 settable=true addrable=true
+    int: 5
+reflect type: slice comparable=false
+  slice: string 2 2
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: string settable=true addrable=true
+    string: xyz 3
+    reflect type: uint8
+      uint: 120
+    reflect type: uint8
+      uint: 121
+    reflect type: uint8
+      uint: 122
+  indexing: 1
+  reflect type: string settable=true addrable=true
+    string: Z 1
+    reflect type: uint8
+      uint: 90
+reflect type: slice comparable=false
+  slice: uint8 0 0
+  pointer: false
+  nil: true
+reflect type: slice comparable=false
+  slice: uint8 0 0
+  pointer: true
+  nil: false
+reflect type: slice comparable=false
+  slice: float32 2 2
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: float32 settable=true addrable=true
+    float: +1.000000e+000
+  indexing: 1
+  reflect type: float32 settable=true addrable=true
+    float: +1.320000e+000
+reflect type: slice comparable=false
+  slice: float64 2 2
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: float64 settable=true addrable=true
+    float: +1.000000e+000
+  indexing: 1
+  reflect type: float64 settable=true addrable=true
+    float: +1.640000e+000
+reflect type: slice comparable=false
+  slice: complex64 2 2
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: complex64 settable=true addrable=true
+    complex: (+1.000000e+000+0.000000e+000i)
+  indexing: 1
+  reflect type: complex64 settable=true addrable=true
+    complex: (+1.640000e+000+3.000000e-001i)
+reflect type: slice comparable=false
+  slice: complex128 2 2
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: complex128 settable=true addrable=true
+    complex: (+1.000000e+000+0.000000e+000i)
+  indexing: 1
+  reflect type: complex128 settable=true addrable=true
+    complex: (+1.128000e+000+4.000000e-001i)
+reflect type: slice comparable=false
+  slice: uint8 3 3
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: uint8 settable=true addrable=true
+    uint: 5
+  indexing: 1
+  reflect type: uint8 settable=true addrable=true
+    uint: 3
+  indexing: 2
+  reflect type: uint8 settable=true addrable=true
+    uint: 11
+reflect type: array
+  array: 3 int64 24
+  reflect type: int64
+    int: 5
+  reflect type: int64
+    int: 8
+  reflect type: int64
+    int: 2
+reflect type: array
+  array: 2 uint8 2
+  reflect type: uint8
+    uint: 3
+  reflect type: uint8
+    uint: 5
+reflect type: func comparable=false
+  func
+  nil: true
+reflect type: func comparable=false
+  func
+  nil: false
+reflect type: map comparable=false
+  map
+  nil: true
+reflect type: map comparable=false
+  map
+  nil: false
+reflect type: struct
+  struct: 0
+reflect type: struct
+  struct: 1
+  field: 0 error
+  tag: 
+  embedded: true
+  exported: false
+  reflect type: interface caninterface=false
+    interface
+    nil: true
+reflect type: struct
+  struct: 3
+  field: 0 a
+  tag: 
+  embedded: false
+  exported: false
+  reflect type: uint8 caninterface=false
+    uint: 42
+  field: 1 b
+  tag: 
+  embedded: false
+  exported: false
+  reflect type: int16 caninterface=false
+    int: 321
+  field: 2 c
+  tag: 
+  embedded: false
+  exported: false
+  reflect type: int8 caninterface=false
+    int: 123
+reflect type: struct comparable=false
+  struct: 5
+  field: 0 n
+  tag: foo:"bar"
+  embedded: false
+  exported: false
+  reflect type: int caninterface=false
+    int: 5
+  field: 1 some
+  tag: 
+  embedded: false
+  exported: false
+  reflect type: struct caninterface=false
+    struct: 2
+    field: 0 X
+    tag: 
+    embedded: false
+    exported: true
+    reflect type: int16 caninterface=false
+      int: -5
+    field: 1 Y
+    tag: 
+    embedded: false
+    exported: true
+    reflect type: int16 caninterface=false
+      int: 3
+  field: 2 zero
+  tag: 
+  embedded: false
+  exported: false
+  reflect type: struct caninterface=false
+    struct: 0
+  field: 3 buf
+  tag: 
+  embedded: false
+  exported: false
+  reflect type: slice caninterface=false comparable=false
+    slice: uint8 2 2
+    pointer: true
+    nil: false
+    indexing: 0
+    reflect type: uint8 addrable=true caninterface=false
+      uint: 71
+    indexing: 1
+    reflect type: uint8 addrable=true caninterface=false
+      uint: 111
+  field: 4 Buf
+  tag: 
+  embedded: false
+  exported: true
+  reflect type: slice comparable=false
+    slice: uint8 1 1
+    pointer: true
+    nil: false
+    indexing: 0
+    reflect type: uint8 settable=true addrable=true
+      uint: 88
+reflect type: ptr
+  pointer: true struct
+  nil: false
+  reflect type: struct settable=true addrable=true
+    struct: 2
+    field: 0 next
+    tag: description:"chain"
+    embedded: false
+    exported: false
+    reflect type: ptr addrable=true caninterface=false
+      pointer: false struct
+      nil: true
+    field: 1 foo
+    tag: 
+    embedded: false
+    exported: false
+    reflect type: int addrable=true caninterface=false
+      int: 42
+reflect type: slice comparable=false
+  slice: interface 3 3
+  pointer: true
+  nil: false
+  indexing: 0
+  reflect type: interface settable=true addrable=true
+    interface
+    nil: false
+    reflect type: int
+      int: 3
+  indexing: 1
+  reflect type: interface settable=true addrable=true
+    interface
+    nil: false
+    reflect type: string
+      string: str 3
+      reflect type: uint8
+        uint: 115
+      reflect type: uint8
+        uint: 116
+      reflect type: uint8
+        uint: 114
+  indexing: 2
+  reflect type: interface settable=true addrable=true
+    interface
+    nil: false
+    reflect type: complex128
+      complex: (-4.000000e+000+2.500000e+000i)
+reflect type: ptr
+  pointer: true int8
+  nil: false
+  reflect type: int8 settable=true addrable=true
+    int: 5
+reflect type: ptr
+  pointer: true int16
+  nil: false
+  reflect type: int16 settable=true addrable=true
+    int: -800
+reflect type: ptr
+  pointer: true int32
+  nil: false
+  reflect type: int32 settable=true addrable=true
+    int: 100000000
+reflect type: ptr
+  pointer: true int64
+  nil: false
+  reflect type: int64 settable=true addrable=true
+    int: -1000000000000
+reflect type: ptr
+  pointer: true complex128
+  nil: false
+  reflect type: complex128 settable=true addrable=true
+    complex: (-8.000000e+000-2.000000e+006i)
+
+sizes:
+int8 1 8
+int16 2 16
+int32 4 32
+int64 8 64
+uint8 1 8
+uint16 2 16
+uint32 4 32
+uint64 8 64
+float32 4 32
+float64 8 64
+complex64 8 64
+complex128 16 128
+offset for int64 matches: true
+offset for complex128 matches: true
+type assertion succeeded for unreferenced type
+
+alignment / offset:
+struct{[0]func(); byte}: true
+
+struct tags
+blue gopher
+
+v.Interface() method
+kind: interface
+int 5

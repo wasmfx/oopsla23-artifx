@@ -1,0 +1,4 @@
+instantiations:
+  $input:
+    arguments:
+      invalid: a
