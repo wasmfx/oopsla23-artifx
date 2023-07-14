@@ -41,7 +41,16 @@ To conduct the experiments you will need the following software components:
 For your convenience, we provide all of the above in a
 [Docker](https://www.docker.com/) image.
 
+To successfully run the experiments you will also need an x86_64
+machine (or emulator) as our WasmFX extension to wasmtime currently
+only works with the x86_64 architecture.
+
 ## Step by Step Instructions
+
+The following instructions assume you want to evaluate the artifact
+using the provided Docker image. If you want to build the artifact
+from source, then please follow the detailed instructions in the
+[Dockerfile](./Dockerfile).
 
 ### Step 0: Unpack the artifact
 
@@ -208,6 +217,72 @@ The file size column in file listings under `compiling main-kjp.go
 with asyncify` and `compiling coroutines.go with asyncify` form the
 basis for the data in Figure 7b in Section 5.1 of the paper.
 
+## Step 5: Modifying the Experiment Parameters (Optional)
+
+To modify the parameters of the coroutines benchmark from Figure 7a in
+Section 5.1 of the paper, you should first install your favourite
+editor, e.g.
+
+```shell
+$ docker run -it wasmfx-oopsla23-artifact /bin/bash
+# apt install emacs-nox
+```
+
+Afterwards navigate to the directory `switching-throughput` and open
+the file `parameters.h`
+
+```shell
+# cd switching-throughput
+# emacs parameters.h
+```
+
+Here you may modify the right hand side of each variable assignment to
+change the benchmark parameters.
+
+```c
+// This parameter controls the total number of spawned coroutines.
+static const unsigned int NUM_COROUTINES = 10000000;
+// This parameter controls the number of coroutines that may run
+// simultaneously.
+static const unsigned int NUM_SIMULTANEOUS = 10000;
+```
+
+Save your changes (in Emacs C-x C-s) and quit the editor (in Emacs C-x
+C-c). And then rebuild and run the benchmarks
+
+```shell
+# make clean && make all
+# ../run-experiments.sh
+```
+
+To compile another TinyGo program, copy it into `go-compile-and-size`
+directory. Suppose your TinyGo program is named `awesome.go` then you
+can compile with Asyncify and WasmFX as follows
+
+```shell
+# cd go-compile-and-size
+# tinygo build -target wasi -o awesome-asyncify.wasm awesome.go
+# ./e2e.sh awesome.go
+# ls -m | grep awesome
+awesome.go, awesome-asyncify.wasm, awesome-wasmfx.wasm
+```
+
+## Inspecting the Source Files
+
+This artifact contains a lot of code. Most of this code is written by
+the open source community. We have chosen to include our changesets to
+the toolchains in the directory [patch/](./patch). These changesets
+were obtained by running `git diff` of our forks against the, at the
+time of writing, respective recent upstream main branch.
+
+* [patch/spec-wasmfx.patch](./patch/spec-wasmfx.patch) contains the
+  changeset for our WasmFX extension to the WebAssembly reference
+  interpreter **with the function references extension**. Note our
+  changeset also includes parts of the exception handling extension.
+* [patch/wasm-tools-wasmfx.patch](./patch/wasm-tools-wasmfx.patch)
+  contains the changeset for our WasmFX extension to wasm-tools.
+* [patch/wasmtime-wasmfx.patch](./patch/wasmtime-wasmfx.patch)
+  contains the changeset for our WasmFX extension to wasmtime.
 
 ## Reference Machine Specification
 
