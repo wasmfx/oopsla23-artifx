@@ -29,7 +29,7 @@ The artifact is structured as follows
    highlights some relevant source files with our WasmFX additions.
 4. [The WasmFX Toolchain](#the-wasmfx-toolchain) describes how our
    "toolchain" works.
-   5. [Reference Machine Specification](#reference-machine-specification)
+5. [Reference Machine Specification](#reference-machine-specification)
    contains some detailed information about the reference machine used
    to conduct the experiments.
 
