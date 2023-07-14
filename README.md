@@ -79,7 +79,7 @@ Docker for your operating system.
 
 **Note** To successfully run the experiments you will also need an
 x86_64 machine (or emulator) as our WasmFX extension to wasmtime is
-currently only compatible with the x86_64 architecture.
+currently only compatible with x86_64 architectures.
 
 **Note** Every machine that we have used for testing this artifact has
 had at minimum 8GB of RAM.
@@ -115,19 +115,36 @@ benchmarks, Dockerfile, LICENSE, patch, README.md, run-experiments.sh, run-tests
 run-tests.sh.reference, tinygo, wasm-spec, wasmtime, wasm-tools
 ```
 
-### Step 1: Build the Docker Image
+### Step 1: Obtain the Docker Image
 
-You may build the Docker image from scratch using the provided
-[Dockerfile](./Dockerfile). Depending on your hardware the build
-process may take upwards an hour, though, any reasonable modern
-workstation ought to be able to finish the process within 5
+You can either download a prepared image or build it yourself from
+scratch.
+
+#### Downloading the image
+
+You can download the prepared image (built for x86_64 architectures)
+by issuing the following command
+
+```shell
+$ docker pull wasmfx/oopsla23-artifact:latest
+$ docker tag wasmfx/oopsla23-artifact wasmfx-oopsla23-artifact
+```
+
+The last command creates an alias for the image, which we will use
+exclusively throughout this guide.
+
+#### Building from Source
+
+To build the image from scratch you may build provided
+[Dockerfile](./Dockerfile) build script. Depending on your hardware
+the build process may take upwards an hour, though, any reasonable
+modern workstation ought to be able to finish the process within 5
 minutes. If you are using an x86_64 machine, then you may build the
 image by issuing the following command
 
 ```shell
 $ docker build -t wasmfx-oopsla23-artifact .
 ```
-[ TODO(dhil): push Docker image to public repo ]
 
 If you are on an Arm-powered machine, then you may try to cross build
 the image
@@ -342,6 +359,8 @@ enumeration highlights the most relevant files
   - `wasmtime/crates/runtime/src/continuation.rs`: the implementation of continuation related libcalls.
   - `wasmtime/crates/fibre/src/unix/x86_64.rs`: the x86_64 code for stack switching.
   - `wasmtime/crates/types/src/lib.rs`: mapping from wasm-tools types to wasmtime types.
+
+
 
 ## Reference Machine Specification
 
