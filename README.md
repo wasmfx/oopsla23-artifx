@@ -16,15 +16,15 @@ like those reported in the paper.
 
 The artifact is structured as follows
 
-1. [Getting Started Guide](#Getting-Started-Guide) enumerates the
+1. [Getting Started Guide](#getting-started-guide) enumerates the
    software and hardware requirements to build and run the artifact
    software.
-2. [Step by Step Instructions](#Step-by-Step Instructions) is a
+2. [Step by Step Instructions](#step-by-step-instructions) is a
    detailed guide on how to run the experiments inside a Docker
    container running the provided Docker image.
-3. [Inspecting the Source Files](#Inspecting-the-Source-Files)
+3. [Inspecting the Source Files](#inspecting-the-source-files)
    highlights some relevant source files with our WasmFX additions.
-4. [Reference Machine Specification](#Reference-Machine-Specification)
+4. [Reference Machine Specification](#reference-machine-specification)
    contains some detailed information about the reference machine used
    to conduct the experiments.
 
