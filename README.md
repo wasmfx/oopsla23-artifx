@@ -26,7 +26,7 @@ The artifact is structured as follows
    highlights some relevant source files with our WasmFX additions.
 4. [The WasmFX Toolchain](#the-wasmfx-toolchain) describes how our
    "toolchain" works.
-5. [Reference Machine Specification](#reference-machine-specification)
+   5. [Reference Machine Specification](#reference-machine-specification)
    contains some detailed information about the reference machine used
    to conduct the experiments.
 
@@ -35,9 +35,8 @@ The directory structure of the artifact is as follows
 * `benchmarks/c/` contains the source code for the C benchmarks.
 * `benchmarks/go` contains the source code for the TinyGo binary size benchmarks.
 * `Dockerfile` is the Docker build script.
-* `LICENSE` is the license which the provided code is generally.
-licensed under, except for cases where a subdirectory contains another
-license file.
+* `LICENSE` is the license which the provided code -- if not stated
+  otherwise -- is licensed under.
 * `patch/` contains the changesets for our forks of wasm-spec, wasm-tools, and wasmtime.
 * `README.md` is a copy of this document.
 * `run-experiments.sh` is a script to automate running the experiments
