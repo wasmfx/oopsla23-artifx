@@ -96,20 +96,20 @@ from source, then please follow the detailed instructions in the
 If you obtained the artifact via the distributed tar-ball, then you
 must first unpack it
 
-```shell
+```
 $ tar xvf paper-195.tar.gz
 ```
 
 Alternatively, you may check it out from the git repository
 
-```shell
+```
 $ git clone https://github.com/wasmfx/oopsla23-artifx.git paper-195
 ```
 
 In either case, you should now have the following files on your
 machine
 
-```shell
+```
 $ cd paper-195 && ls -m
 benchmarks, Dockerfile, LICENSE, patch, README.md, run-experiments.sh, run-tests.sh,
 run-tests.sh.reference, tinygo, wasm-spec, wasmtime, wasm-tools
@@ -125,7 +125,7 @@ scratch.
 You can download the prepared image (built for x86_64 architectures)
 by issuing the following command
 
-```shell
+```
 $ docker pull wasmfx/oopsla23-artifact:latest
 $ docker tag wasmfx/oopsla23-artifact wasmfx-oopsla23-artifact
 ```
@@ -142,21 +142,21 @@ modern workstation ought to be able to finish the process within 5
 minutes. If you are using an x86_64 machine, then you may build the
 image by issuing the following command
 
-```shell
+```
 $ docker build -t wasmfx-oopsla23-artifact .
 ```
 
 If you are on an Arm-powered machine, then you may try to cross build
 the image
 
-```shell
+```
 $ docker buildx build --platform linux/amd64 -t wasmfx-oopsla23-artifact .
 ```
 
 In either case, if the build is successful then the last line of the
 console ought to read
 
-```shell
+```
 Successfully tagged wasmfx-oopsla23-artifact:latest
 ```
 
@@ -166,28 +166,28 @@ To test image, we can launch it inside a container. If you are on an
 x86_64 machine, then invoke the following command to launch the image
 and drop you into an interactive shell
 
-```shell
+```
 $ docker run -it wasmfx-oopsla23-artifact /bin/bash
 ```
 
 If you are on an Arm-powered device then you may try to use the
 emulation layer, e.g.
 
-```shell
+```
 $ docker run --platform linux/amd64 -it wasmfx-oopsla23-artifact /bin/bash
 ```
 
 Nonetheless, once the shell has been launched you should be able to
 see the following files
 
-```shell
+```
 # ls -m
 go-compile-and-size, run-experiments.sh, run-tests.sh, switching-throughput, tinygo, wasm-spec, wasm-tools, wasmtime
 ```
 
 To exit the container again, simply type
 
-```shell
+```
 # exit
 ```
 
@@ -201,7 +201,7 @@ the first time the script is run (in the current container instance)
 it will trigger the debug builds of wasm-tools and wasmtime. To run
 the testsuite simply invoke
 
-```shell
+```
 $ docker run -t wasmfx-oopsla23-artifact ./run-tests.sh
 ```
 
@@ -218,7 +218,7 @@ We provide a experiment runner script which runs the experiments
 described in Section 5.1 of the paper. You may launch this script by
 running
 
-```shell
+```
 $ docker run -t wasmfx-oopsla23-artifact ./run-experiments.sh
 ```
 
@@ -277,7 +277,7 @@ To modify the parameters of the coroutines benchmark from Figure 7a in
 Section 5.1 of the paper, you should first install your favourite
 editor, e.g.
 
-```shell
+```
 $ docker run -it wasmfx-oopsla23-artifact /bin/bash
 # apt install emacs-nox
 ```
@@ -285,7 +285,7 @@ $ docker run -it wasmfx-oopsla23-artifact /bin/bash
 Afterwards navigate to the directory `switching-throughput` and open
 the file `parameters.h`
 
-```shell
+```
 # cd switching-throughput
 # emacs parameters.h
 ```
@@ -304,7 +304,7 @@ static const unsigned int NUM_SIMULTANEOUS = 10000;
 Save your changes (in Emacs C-x C-s) and quit the editor (in Emacs C-x
 C-c). And then rebuild and run the benchmarks
 
-```shell
+```
 # make clean && make all
 # ../run-experiments.sh
 ```
@@ -313,7 +313,7 @@ To compile another TinyGo program, copy it into `go-compile-and-size`
 directory. Suppose your TinyGo program is named `awesome.go` then you
 can compile with Asyncify and WasmFX as follows
 
-```shell
+```
 # cd go-compile-and-size
 # tinygo build -target wasi -o awesome-asyncify.wasm awesome.go
 # ./e2e.sh awesome.go
@@ -364,7 +364,7 @@ enumeration highlights the most relevant files
 
 ## Reference Machine Specification
 
-```shell
+```
 $ docker --version
 Docker version 20.10.21, build 20.10.21-0ubuntu1~22.04.3
 $ uname -rsvpo
