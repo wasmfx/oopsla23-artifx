@@ -12,6 +12,9 @@ the particular reference machine (or a virtually identical one). The
 purpose of this document is to describe how to obtain measurements
 like those reported in the paper.
 
+This document is best viewed on GitHub
+(https://github.com/wasmfx/oopsla23-artifx).
+
 ## Overview of the Artifact
 
 The artifact is structured as follows
@@ -42,7 +45,7 @@ The directory structure of the artifact is as follows
 * `run-experiments.sh` is a script to automate running the experiments
 * `run-tests.sh` is a script to automate running the testsuites
 * `run-tests.sh.reference` contains a sample output of running `run-tests.sh`
-* `tinygo/` contains a copy of the sources of TinyGo version 0.26
+* `tinygo/` contains our fork of TinyGo version 0.26
 * `wasm-spec` is our fork of the WebAssembly reference interpreter
 * `wasmtime` is our fork of the Bytecode Alliance's wasmtime (it's the
   Wasm compiler and runtime).
@@ -338,6 +341,8 @@ time of writing, respective recent upstream main branch.
   contains the changeset for our WasmFX extension to wasm-tools.
 * [patch/wasmtime-wasmfx.patch](./patch/wasmtime-wasmfx.patch)
   contains the changeset for our WasmFX extension to wasmtime.
+* [patch/tinygo-wasmfx.patch](./patch/tinygo-wasmfx.patch) contains
+  the changeset to make the TinyGo compiler emit WasmFX instructions.
 
 If you want to look at the source files themselves, then the following
 enumeration highlights the most relevant files
@@ -405,6 +410,20 @@ certain tools and on certain optimisations not being applied.
 
 In the future we intend to develop a robust toolchain for compiling
 some high-level language to Wasm extended with WasmFX instructions.
+
+Our patched TinyGo compiler works as follows
+
+1. Use the JavaScript runtime for WASI with a stub event handler.
+2. Skip the Asyncify pass on Wasm modules produced by the TinyGo.
+3. Instead, run the Perl script [tinygo/effects.pl](./tinygo/effects.pl). It:
+  - Replaces the runtime scheduler with a WasmFX-powered scheduler
+    similar to the one in Section 2.5 of the paper.
+  - Replaces the runtime function `task.Pause` with the WasmFX
+    instruction `suspend $scheduler` where `$scheduler` is the control
+    tag for transferring control to the WasmFX-powered scheduler.
+  - Replaces the runtime function `task.start` with both the WasmFX
+    instruction `cont.new` and runtime function `enqueue` (the latter
+    enqueues the continuation).
 
 ## Reference Machine Specification
 
