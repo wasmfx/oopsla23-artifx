@@ -202,7 +202,7 @@ of WasmFX, as the version of the compiler and runtime included here
 has a performance regression due to our own refactorings and upstream
 changes. Another side effect of these changes is that the memory
 footprint of the asyncify programs has been improved. We will update
-the numbers accordingly in the paper.
+the numbers accordingly in the camera-ready version of the paper.
 
 The file size column in file listings under `compiling main-kjp.go
 with asyncify` and `compiling coroutines.go with asyncify` form the
