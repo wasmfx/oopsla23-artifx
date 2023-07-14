@@ -21,7 +21,7 @@ RUN opam switch create 4.14.1
 RUN eval $(opam env) && opam install ocamlbuild
 
 # Install and setup rust environment
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y -t 1.70.0
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN "$HOME/.cargo/bin/rustup" target add wasm32-wasi
 
 # Download WASI SDK 20.0
@@ -59,9 +59,9 @@ RUN make wasi-libc
 
 # Copy benchmarks
 WORKDIR /artifact
-COPY bench-wasmfx/c ./switching-throughput
+COPY benchmarks/c ./switching-throughput
 RUN mv wasi-sdk-20.0 ./switching-throughput/wasi-sdk-20.0
-COPY bench-wasmfx/go ./go-compile-and-size
+COPY benchmarks/go ./go-compile-and-size
 WORKDIR /artifact/switching-throughput
 RUN make all
 
