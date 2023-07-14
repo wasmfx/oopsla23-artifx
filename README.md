@@ -14,6 +14,40 @@ like those reported in the paper.
 
 ## Overview of the Artifact
 
+The artifact is structured as follows
+
+1. [Getting Started Guide](#Getting-Started-Guide) enumerates the
+   software and hardware requirements to build and run the artifact
+   software.
+2. [Step by Step Instructions](#Step-by-Step Instructions) is a
+   detailed guide on how to run the experiments inside a Docker
+   container running the provided Docker image.
+3. [Inspecting the Source Files](#Inspecting-the-Source-Files)
+   highlights some relevant source files with our WasmFX additions.
+4. [Reference Machine Specification](#Reference-Machine-Specification)
+   contains some detailed information about the reference machine used
+   to conduct the experiments.
+
+The directory structure of the artifact is as follows
+
+* `benchmarks/c/` contains the source code for the C benchmarks.
+* `benchmarks/go` contains the source code for the TinyGo binary size benchmarks.
+* `Dockerfile` is the Docker build script.
+* `LICENSE` is the license which the provided code is generally.
+licensed under, except for cases where a subdirectory contains another
+license file.
+* `patch/` contains the changesets for our forks of wasm-spec, wasm-tools, and wasmtime.
+* `README.md` is a copy of this document.
+* `run-experiments.sh` is a script to automate running the experiments
+* `run-tests.sh` is a script to automate running the testsuites
+* `run-tests.sh.reference` contains a sample output of running `run-tests.sh`
+* `tinygo/` contains a copy of the sources of TinyGo version 0.26
+* `wasm-spec` is our fork of the WebAssembly reference interpreter
+* `wasmtime` is our fork of the Bytecode Alliance's wasmtime (it's the
+  Wasm compiler and runtime).
+* `wasm-tools` is our fork of the Bytecode Alliance's wasm-tools (it's
+  binary parser and typechecker used by wasmtime).
+
 The entire source code of this artifact is available on GitHub
 (https://github.com/wasmfx/oopsla23-artifx).
 
@@ -39,11 +73,16 @@ To conduct the experiments you will need the following software components:
 17. Our benchmark suite
 
 For your convenience, we provide all of the above in a
-[Docker](https://www.docker.com/) image.
+[Docker](https://www.docker.com/) image. Please consult [the official
+Docker documentation](https://docs.docker.com/engine/install/) for instructions on to install and configure
+Docker for your operating system.
 
-To successfully run the experiments you will also need an x86_64
-machine (or emulator) as our WasmFX extension to wasmtime currently
-only works with the x86_64 architecture.
+**Note** To successfully run the experiments you will also need an
+x86_64 machine (or emulator) as our WasmFX extension to wasmtime is
+currently only compatible with the x86_64 architecture.
+
+**Note** Every machine that we have used for testing this artifact has
+had at minimum 8GB of RAM.
 
 ## Step by Step Instructions
 
@@ -55,7 +94,7 @@ from source, then please follow the detailed instructions in the
 ### Step 0: Unpack the artifact
 
 If you obtained the artifact via the distributed tar-ball, then you
-must first unpack
+must first unpack it
 
 ```shell
 $ tar xvf paper-195.tar.gz
@@ -73,10 +112,8 @@ machine
 ```shell
 $ cd paper-195 && ls -m
 benchmarks, Dockerfile, LICENSE, patch, README.md, run-experiments.sh, run-tests.sh,
-run-tests.sh.reference, sync.sh, tinygo, wasm-spec, wasmtime, wasm-tools
+run-tests.sh.reference, tinygo, wasm-spec, wasmtime, wasm-tools
 ```
-[ TODO(dhil): add run-experiments.sh.reference ]
-
 
 ### Step 1: Build the Docker Image
 
@@ -283,6 +320,28 @@ time of writing, respective recent upstream main branch.
   contains the changeset for our WasmFX extension to wasm-tools.
 * [patch/wasmtime-wasmfx.patch](./patch/wasmtime-wasmfx.patch)
   contains the changeset for our WasmFX extension to wasmtime.
+
+If you want to look at the source files themselves, then the following
+enumeration highlights the most relevant files
+
+* Reference interpreter
+  - `wasm-spec/interpreter/text/parser.mly`: the parser (look for
+    productions involving keywords `resume` and `cont`).
+  - `wasm-spec/interpreter/syntax/{ast,types}.ml`: the abstract syntax
+    for terms and types.
+  - `wasm-spec/interpreter/valid/valid.ml`: the type checker.
+  - `wasm-spec/interpreter/binary/encode.ml`: the binary encoder.
+  - `wasm-spec/interpreter/exec/eval.ml`: the evaluator.
+* wasm-tools
+  - `wasm-tools/crates/wasmparser/src/core/types.rs`: the type structure.
+  - `wasm-tools/crates/wasmparser/src/validator/core/operators.rs`: the type checker.
+  - `wasm-tools/crates/wasmparser/src/lib.rs`: a macro for generating the abstract term syntax.
+* wasmtime
+  - `wasmtime/cranelift/wasm/src/code_translator.rs`: translator from wasm-tools term syntax to the cranelift intermediate representation.
+  - `wasmtime/crates/cranelift/src/func_environ.rs`: translation utilities.
+  - `wasmtime/crates/runtime/src/continuation.rs`: the implementation of continuation related libcalls.
+  - `wasmtime/crates/fibre/src/unix/x86_64.rs`: the x86_64 code for stack switching.
+  - `wasmtime/crates/types/src/lib.rs`: mapping from wasm-tools types to wasmtime types.
 
 ## Reference Machine Specification
 
