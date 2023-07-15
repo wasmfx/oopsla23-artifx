@@ -181,6 +181,7 @@ awesome.go, awesome-asyncify.wasm, awesome-wasmfx.wasm</code></pre>
 <li><code>wasmtime/crates/types/src/lib.rs</code>: mapping from wasm-tools types to wasmtime types.</li>
 </ul></li>
 </ul>
+<p>If you plan to make changes to the wasm-tools or wasmtime source flags, or want to try different compilation flags, then we recommend doing a <code>cargo clean</code> in the root of the respective toolchain before running <code>cargo build</code> to clear the build cache.</p>
 <h2 id="the-wasmfx-toolchains">The WasmFX Toolchains</h2>
 <p>Our work does not include a fully developed toolchain. Instead, we leverage existing toolchains by performing textual substitution on their outputs. The “compiler” (it is really an oversized regex) for our benchmarks operate on wast files and relies on the assumption that certain names are present. Therefore it is important that toolchains to not optimise occurrences of these names away.</p>
 <p>For example, in the <a href="./benchmarks/c/Makefile">benchmarks/c/Makefile</a> the rule for generating the precompiled module <code>wasmfx.cwasm</code> is defined as follows</p>

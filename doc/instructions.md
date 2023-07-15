@@ -376,6 +376,11 @@ enumeration highlights the most relevant files
   - `wasmtime/crates/fibre/src/unix/x86_64.rs`: the x86_64 code for stack switching.
   - `wasmtime/crates/types/src/lib.rs`: mapping from wasm-tools types to wasmtime types.
 
+If you plan to make changes to the wasm-tools or wasmtime source
+flags, or want to try different compilation flags, then we recommend
+doing a `cargo clean` in the root of the respective toolchain before
+running `cargo build` to clear the build cache.
+
 ## The WasmFX Toolchains
 
 Our work does not include a fully developed toolchain. Instead, we
