@@ -35,8 +35,8 @@ ENV PATH="${PATH}:/usr/local/go/bin:/root/go/bin"
 # Copy reference interpreter
 COPY wasm-spec ./wasm-spec
 WORKDIR /artifact/wasm-spec/interpreter
+# Build the reference interpreter
 RUN eval $(opam env) && make opt
-RUN ln -s /artifact/wasm-spec/interpreter/wasm /artifact/wasm-spec/interpreter/effect-handlers-wasm
 ENV PATH="${PATH}:/artifact/wasm-spec/interpreter"
 
 # Copy wasm-tools sources
@@ -47,6 +47,18 @@ COPY wasm-tools ./wasm-tools
 WORKDIR /artifact
 COPY wasmtime ./wasmtime
 WORKDIR /artifact/wasmtime
+# Build wasmtime. Note that we toggle the feature
+# `unsafe_disable_continuation_linearity_check` which causes the
+# compiler to not emit small continuation proxy objects that are used
+# to dynamically check the one-shot property of Wasm continuation
+# references. The reason for toggling this feature is that we need
+# reference counting to properly clean up continuation references,
+# however, at the time of writing cranelift (the wasmtime compiler)
+# does not yet have native support for this. In the future we are
+# hoping to use some of the facilities brought in by the Garbage
+# Collection extension
+# (https://github.com/bytecodealliance/rfcs/pull/31) to manage the
+# memory of one-shot continuations.
 RUN "$HOME/.cargo/bin/cargo" build --release --features=default,unsafe_disable_continuation_linearity_check
 ENV PATH="${PATH}:/artifact/wasmtime/target/release"
 
@@ -54,7 +66,9 @@ ENV PATH="${PATH}:/artifact/wasmtime/target/release"
 WORKDIR /artifact
 COPY tinygo tinygo
 WORKDIR /artifact/tinygo
+# Build the compiler
 RUN go install
+# Build WASI Libc bindings
 RUN make wasi-libc
 
 # Copy benchmarks

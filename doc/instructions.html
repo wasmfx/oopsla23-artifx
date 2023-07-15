@@ -6,16 +6,17 @@
 <h2 id="overview-of-the-artifact">Overview of the Artifact</h2>
 <p>The artifact is structured as follows</p>
 <ol type="1">
-<li><a href="#getting-started-guide">Getting Started Guide</a> enumerates the software and hardware requirements to build and run the artifact software.</li>
-<li><a href="#step-by-step-instructions">Step by Step Instructions</a> is a detailed guide on how to run the experiments inside a Docker container running the provided Docker image.</li>
-<li><a href="#inspecting-the-source-files">Inspecting the Source Files</a> highlights some relevant source files with our WasmFX additions.</li>
-<li><a href="#the-wasmfx-toolchain">The WasmFX Toolchain</a> describes how our “toolchain” works.</li>
-<li><a href="#reference-machine-specification">Reference Machine Specification</a> contains some detailed information about the reference machine used to conduct the experiments.</li>
+<li>The section <a href="#getting-started-guide">Getting Started Guide</a> enumerates the software and hardware requirements to build and run the artifact software.</li>
+<li>The section <a href="#step-by-step-instructions">Step by Step Instructions</a> is a detailed guide on how to run the experiments inside a Docker container running the provided Docker image.</li>
+<li>The section <a href="#inspecting-the-source-files">Inspecting the Source Files</a> highlights some relevant source files with our WasmFX additions.</li>
+<li>The section <a href="#the-wasmfx-toolchains">The WasmFX Toolchains</a> describes how our “toolchains” work.</li>
+<li>The section <a href="#reference-machine-specification">Reference Machine Specification</a> contains some detailed information about the reference machine used to conduct the experiments.</li>
 </ol>
 <p>The directory structure of the artifact is as follows</p>
 <ul>
 <li><code>benchmarks/c/</code> contains the source code for the C benchmarks.</li>
 <li><code>benchmarks/go</code> contains the source code for the TinyGo binary size benchmarks.</li>
+<li><code>doc/</code> contains alternate formats of this document and a build for generating them.</li>
 <li><code>Dockerfile</code> is the Docker build script.</li>
 <li><code>LICENSE</code> is the license which the provided code – if not stated otherwise – is licensed under.</li>
 <li><code>patch/</code> contains the changesets for our forks of wasm-spec, wasm-tools, and wasmtime.</li>
@@ -23,7 +24,7 @@
 <li><code>run-experiments.sh</code> is a script to automate running the experiments</li>
 <li><code>run-tests.sh</code> is a script to automate running the testsuites</li>
 <li><code>run-tests.sh.reference</code> contains a sample output of running <code>run-tests.sh</code></li>
-<li><code>tinygo/</code> contains our fork of TinyGo version 0.26</li>
+<li><code>tinygo/</code> contains our fork of TinyGo</li>
 <li><code>wasm-spec</code> is our fork of the WebAssembly reference interpreter</li>
 <li><code>wasmtime</code> is our fork of the Bytecode Alliance’s wasmtime (it’s the Wasm compiler and runtime).</li>
 <li><code>wasm-tools</code> is our fork of the Bytecode Alliance’s wasm-tools (it’s binary parser and typechecker used by wasmtime).</li>
@@ -37,23 +38,24 @@
 <li>Our WasmFX extension patch to the reference interpreter.</li>
 <li>The wasm-tools and wasmtime toolchains from the Bytecode Alliance.</li>
 <li>Our WasmFX extension patches to wasm-tools and wasmtime.</li>
-<li>The WASI SDK version 20.0 for Linux</li>
-<li>Go version 18</li>
-<li>TinyGo version 0.26</li>
-<li>The Clang toolchain version 14</li>
-<li>The Rust toolchain version 1.71</li>
-<li>OPAM version 2.1.2</li>
-<li>WebAssembly Binary Toolkit (wabt) version 1.0.32-1</li>
-<li>Binaryen version 108-1</li>
-<li>Rakudo version 2022.12-1</li>
-<li>GNU time</li>
-<li>Our benchmark suite</li>
+<li>The WASI SDK version 20.0 for Linux.</li>
+<li>Go version 18.</li>
+<li>TinyGo version 0.26.</li>
+<li>Our WasmFX extension patch to TinyGo.</li>
+<li>The Clang toolchain version 14.</li>
+<li>The Rust toolchain version 1.71.</li>
+<li>OPAM version 2.1.2.</li>
+<li>WebAssembly Binary Toolkit (wabt) version 1.0.32-1.</li>
+<li>Binaryen version 108-1.</li>
+<li>Rakudo version 2022.12-1.</li>
+<li>GNU time.</li>
+<li>Our benchmark suite.</li>
 </ol>
 <p>For your convenience, we provide all of the above in a <a href="https://www.docker.com/">Docker</a> image. Please consult <a href="https://docs.docker.com/engine/install/">the official Docker documentation</a> for instructions on to install and configure Docker for your operating system.</p>
 <p><strong>Note</strong> To successfully run the experiments you will also need an x86_64 machine (or emulator) as our WasmFX extension to wasmtime is currently only compatible with x86_64 architectures.</p>
 <p><strong>Note</strong> Every machine that we have used for testing this artifact has had at minimum 8GB of RAM.</p>
 <h2 id="step-by-step-instructions">Step by Step Instructions</h2>
-<p>The following instructions assume you want to evaluate the artifact using the provided Docker image. If you want to build the artifact from source, then please follow the detailed instructions in the <a href="./Dockerfile">Dockerfile</a>.</p>
+<p>The following instructions assume you want to evaluate the artifact using the provided Docker image. If you want to build the artifact from source, then please follow the detailed instructions in the <a href="./Dockerfile">Dockerfile</a>. Nonetheless, the Dockerfile should be considered as an addendum to these instructions as it contains additional commentary on the compilation flags necessary to reproduce the experiments.</p>
 <h3 id="step-0-unpack-the-artifact">Step 0: Unpack the artifact</h3>
 <p>If you obtained the artifact via the distributed tar-ball, then you must first unpack it</p>
 <pre><code>$ tar xvf paper-195.tar.gz</code></pre>
@@ -71,7 +73,7 @@ run-tests.sh.reference, tinygo, wasm-spec, wasmtime, wasm-tools</code></pre>
 $ docker tag wasmfx/oopsla23-artifact wasmfx-oopsla23-artifact</code></pre>
 <p>The last command creates an alias for the image, which we will use exclusively throughout this guide.</p>
 <h4 id="building-from-source">Building from Source</h4>
-<p>To build the image from scratch you may build provided <a href="./Dockerfile">Dockerfile</a> build script. Depending on your hardware the build process may take upwards an hour, though, any reasonable modern workstation ought to be able to finish the process within 5 minutes. If you are using an x86_64 machine, then you may build the image by issuing the following command</p>
+<p>To build the image from scratch you may use provided <a href="./Dockerfile">Dockerfile</a> build script. Depending on your hardware the build process may take upwards an hour, though, any reasonable modern workstation ought to be able to finish the process within 5 minutes. If you are using an x86_64 machine, then you may build the image by issuing the following command</p>
 <pre><code>$ docker build -t wasmfx-oopsla23-artifact .</code></pre>
 <p>If you are on an Arm-powered machine, then you may try to cross build the image</p>
 <pre><code>$ docker buildx build --platform linux/amd64 -t wasmfx-oopsla23-artifact .</code></pre>
@@ -127,7 +129,7 @@ compiling coroutines.go with asyncify
 <h2 id="step-5-modifying-the-experiment-parameters-optional">Step 5: Modifying the Experiment Parameters (Optional)</h2>
 <p>To modify the parameters of the coroutines benchmark from Figure 7a in Section 5.1 of the paper, you should first install your favourite editor, e.g.</p>
 <pre><code>$ docker run -it wasmfx-oopsla23-artifact /bin/bash
-# apt install emacs-nox</code></pre>
+# apt install emacs</code></pre>
 <p>Afterwards navigate to the directory <code>switching-throughput</code> and open the file <code>parameters.h</code></p>
 <pre><code># cd switching-throughput
 # emacs parameters.h</code></pre>
@@ -179,7 +181,7 @@ awesome.go, awesome-asyncify.wasm, awesome-wasmfx.wasm</code></pre>
 <li><code>wasmtime/crates/types/src/lib.rs</code>: mapping from wasm-tools types to wasmtime types.</li>
 </ul></li>
 </ul>
-<h2 id="the-wasmfx-toolchain">The WasmFX Toolchain</h2>
+<h2 id="the-wasmfx-toolchains">The WasmFX Toolchains</h2>
 <p>Our work does not include a fully developed toolchain. Instead, we leverage existing toolchains by performing textual substitution on their outputs. The “compiler” (it is really an oversized regex) for our benchmarks operate on wast files and relies on the assumption that certain names are present. Therefore it is important that toolchains to not optimise occurrences of these names away.</p>
 <p>For example, in the <a href="./benchmarks/c/Makefile">benchmarks/c/Makefile</a> the rule for generating the precompiled module <code>wasmfx.cwasm</code> is defined as follows</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true"></a><span class="dt">CC</span><span class="ch">=</span><span class="st">wasi-sdk-20.0/bin/clang -O3</span></span>
