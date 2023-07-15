@@ -126,7 +126,7 @@ compiling coroutines.go with asyncify
 <p>The <code>bespoke opt</code>, <code>asyncify opt</code>, and <code>wasmfx opt</code> entries display the run time and memory consumption measurements which forms the basis for Figure 7a in Section 5.1 of the paper. There are two columns of data under each entry. The first column is the elapsed wall time in seconds, whilst the second column is the memory footprint in bytes.</p>
 <p>Note that the measurements will differ slightly from the ones reported in the paper, in particular for the case of the run time performance of WasmFX, as the version of the compiler and runtime included here has a performance regression due to our own refactorings and upstream changes. Another side effect of these changes is that the memory footprint of the asyncify programs has been improved. We will update the numbers accordingly in the camera-ready version of the paper.</p>
 <p>The file size column in file listings under <code>compiling main-kjp.go with asyncify</code> and <code>compiling coroutines.go with asyncify</code> form the basis for the data in Figure 7b in Section 5.1 of the paper.</p>
-<h2 id="step-5-modifying-the-experiment-parameters-optional">Step 5: Modifying the Experiment Parameters (Optional)</h2>
+<h3 id="step-5-modifying-the-experiment-parameters-optional">Step 5: Modifying the Experiment Parameters (Optional)</h3>
 <p>To modify the parameters of the coroutines benchmark from Figure 7a in Section 5.1 of the paper, you should first install your favourite editor, e.g.</p>
 <pre><code>$ docker run -it wasmfx-oopsla23-artifact /bin/bash
 # apt install emacs</code></pre>

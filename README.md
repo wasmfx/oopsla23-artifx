@@ -285,7 +285,7 @@ The file size column in file listings under `compiling main-kjp.go
 with asyncify` and `compiling coroutines.go with asyncify` form the
 basis for the data in Figure 7b in Section 5.1 of the paper.
 
-## Step 5: Modifying the Experiment Parameters (Optional)
+### Step 5: Modifying the Experiment Parameters (Optional)
 
 To modify the parameters of the coroutines benchmark from Figure 7a in
 Section 5.1 of the paper, you should first install your favourite
