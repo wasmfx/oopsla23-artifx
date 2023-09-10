@@ -2,7 +2,7 @@
 
 ## Raw switching throughput
 
-In the `c/` directory
+In the `c10m/` directory
 
 ## Tinygo programs (coroutines)
 
