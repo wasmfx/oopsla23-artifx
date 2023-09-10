@@ -37,7 +37,7 @@ The artifact is structured as follows
 
 The directory structure of the artifact is as follows
 
-* `benchmarks/c/` contains the source code for the C benchmarks.
+* `benchmarks/c10m/` contains the source code for the C benchmarks.
 * `benchmarks/go` contains the source code for the TinyGo binary size benchmarks.
 * `doc/` contains alternate formats of this document and a build for generating them.
 * `Dockerfile` is the Docker build script.
@@ -79,8 +79,9 @@ components:
 14. WebAssembly Binary Toolkit (wabt) version 1.0.32-1.
 15. Binaryen version 108-1.
 16. Rakudo version 2022.12-1.
-17. GNU time.
-18. Our benchmark suite.
+17. Mimalloc version 2.1.2
+18. GNU time.
+19. Our benchmark suite.
 
 For your convenience, we provide all of the above in a
 [Docker](https://www.docker.com/) image. Please consult [the official
@@ -240,23 +241,23 @@ The output of this command should look similar to the following
 
 ```
 bespoke opt
-1.06 14116
-1.08 14172
-1.08 13964
-1.05 13912
-1.03 14308
+0.14 13248
+0.14 13440
+0.14 13248
+0.14 13440
+0.14 13248
 asyncify opt
-0.49 63936
-0.50 64048
-0.48 63988
-0.49 63852
-0.52 63976
+0.70 53568
+0.70 54144
+0.68 53568
+0.71 53952
+0.70 53760
 wasmfx opt
-2.28 63252
-2.34 63668
-2.45 63660
-2.35 63904
-2.36 63384
+2.62 55104
+2.61 55296
+2.72 55296
+2.70 54912
+2.72 55488
 compiling main-kjp.go with wasmfx
 compiling main-kjp.go with asyncify
 -rwxr-xr-x 1 root root 479K Jul 14 18:05 main-kjp-asyncify.wasm
@@ -304,15 +305,18 @@ the file `parameters.h`
 # emacs parameters.h
 ```
 
-Here you may modify the right hand side of each variable assignment to
-change the benchmark parameters.
+Here you may modify macro definition or the right hand side of each
+variable assignment to change the benchmark parameters.
 
 ```c
-// This parameter controls the total number of spawned coroutines.
-static const unsigned int NUM_COROUTINES = 10000000;
-// This parameter controls the number of coroutines that may run
-// simultaneously.
-static const unsigned int NUM_SIMULTANEOUS = 10000;
+// This parameter controls how many coroutines are generated in total.
+static const uint32_t total_conn = modifier * 1000000;
+// This parameter controls the maxmimum number of simultaneous
+// coroutines.
+#define active_conn ((uint32_t)10000)
+// This parameter controls the stack manipulation size parameter for
+// each coroutine.
+static const uint32_t stack_kb = 32;
 ```
 
 Save your changes (in Emacs C-x C-s) and quit the editor (in Emacs C-x
@@ -383,48 +387,29 @@ running `cargo build` to clear the build cache.
 
 ## The WasmFX Toolchains
 
-Our work does not include a fully developed toolchain. Instead, we
-leverage existing toolchains by performing textual substitution on
-their outputs. The "compiler" (it is really an oversized regex) for
-our benchmarks operate on wast files and relies on the assumption that
-certain names are present. Therefore it is important that toolchains
-to not optimise occurrences of these names away.
+We do not yet have toolchain support for the WasmFX instruction
+set. Therefore WasmFX programs are currently linked by hand and
+assembled using the binary encoder of reference interpreter for
+WasmFX. Thus the process of compiling a WasmFX program is tedious and
+laborious, whilst also being prone to error.
 
-For example, in the [benchmarks/c/Makefile](./benchmarks/c/Makefile)
-the rule for generating the precompiled module `wasmfx.cwasm` is
-defined as follows
+The workflow is as follows
 
-```Makefile
-CC=wasi-sdk-20.0/bin/clang -O3
-WTC=wasmtime compile
-
-wasmfx.wat: coroutines.c wasmfx.pl
-	$(CC) coroutines.c -o wasmfx.wasm -Wl,--allow-undefined,--export=a_coroutine
-	wasm2wat wasmfx.wasm >wasmfx_import.wat
-	raku wasmfx.pl <wasmfx_import.wat >wasmfx.wat
-
-wasmfx.cwasm: wasmfx.wat
-	wasm -d -i wasmfx.wat -o wasmfx.wasm
-	$(WTC) --wasm-features typed-continuations,function-references,exceptions wasmfx.wasm
-```
-
-The line `$(CC) coroutines.c ...` contains the option
-`--export=a_coroutines` which makes sure the procedure `a_coroutine`
-from [benchmarks/c/coroutines.c](./benchmarks/c/coroutines.c) is
-publicly visible. The output is an optimised binary. Thus we use the
-utility `wasm2wat` (from wabt) to turn the binary into a textual Wasm
-file named `wasmfx_import.wat` (see the perl script
-[benchmarks/c/wasmfx.pl](./benchmarks/c/wasmfx.pl) for the glorious
-details). The next line applies the Perl script `wasmfx.pl` to
-textually substitute in the required runtime components. The resulting
-`wasmfx.wat` is translated back into binary file using the WasmFX
-reference interpreter (called `wasm` in the above listing). Finally,
-we use wasmtime to precompile the Wasm binary. Obviously, this is a
-brittle "toolchain" as it relies on the internal naming scheme of
-certain tools and on certain optimisations not being applied.
-
-In the future we intend to develop a robust toolchain for compiling
-some high-level language to Wasm extended with WasmFX instructions.
+1. Use `clang`'s attribute annotations to import key effectful
+   functions (see
+   [benchmark/c10m/c10m.c](./benchmarks/c10m/Makefile)).
+2. Compile the source file with the WASI SDK `clang`
+  + For the Asyncify version, we statically link an [Asyncify-backed
+    implementation of fibers](./benchmarks/c10m/fiber_asyncify.c)
+    along with the [Asyncify implementation of the effectful
+    imports](./benchmarks/c10m/c10m_asyncify.c).
+  + For the WasmFX version, we decode the produced `wasm` file to a
+    `wast` (or `wat`) file using the reference interpreter's decoder,
+    then we manually substitute in the stubs for the imports, and
+    subsequently use the reference interpreter's binary encoder to
+    produce a new `wasm` file.
+3. Precompile the `wasm` file with `wasmtime compile` to produce a `cwasm` file.
+4. Run the `cwasm` file with `wasmtime --allow-precompiled`.
 
 Our patched TinyGo compiler works as follows
 
@@ -439,6 +424,9 @@ Our patched TinyGo compiler works as follows
   - Replaces the runtime function `task.start` with both the WasmFX
     instruction `cont.new` and runtime function `enqueue` (the latter
     enqueues the continuation).
+
+In the future we intend to develop a robust toolchain for compiling
+some high-level language to Wasm extended with WasmFX instructions.
 
 ## Reference Machine Specification
 
