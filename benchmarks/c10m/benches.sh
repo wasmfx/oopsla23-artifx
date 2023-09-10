@@ -19,11 +19,11 @@ echo >benches.r
 make all >/dev/null 2>/dev/null
 echo "bespoke opt"
 echo "# bespoke opt" >> benches.r
-bench wasmtime --allow-precompiled bespoke.cwasm
+bench wasmtime --allow-precompiled c10m_bespoke.cwasm
 echo "asyncify opt"
 echo "# asyncify opt" >> benches.r
-bench wasmtime --allow-precompiled asyncify.cwasm
+bench wasmtime --allow-precompiled c10m_asyncify.cwasm
 echo "wasmfx opt"
 echo "# wasmfx opt" >> benches.r
-bench wasmtime --wasm-features=typed-continuations,exceptions,function-references --allow-precompiled wasmfx.cwasm
+bench wasmtime --wasm-features=typed-continuations,exceptions,function-references --allow-precompiled c10m_wasmfx.cwasm
 
