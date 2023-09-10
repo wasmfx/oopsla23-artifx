@@ -7,12 +7,12 @@ WORKDIR /artifact
 
 ## Install dependencies
 
-# Install standard utility + opam + binaryen + wabt + rakudo + clang-14 from the
-# Debian repository
+# Install standard utility + opam + binaryen + wabt + rakudo +
+# clang-14 + cmake from the Debian repository
 RUN apt-get update && \
     apt-get install -y opam git curl wget time \
                        binaryen wabt rakudo \
-                       clang-14 llvm-14-dev lld-14 libclang-14-dev
+                       clang-14 llvm-14-dev lld-14 libclang-14-dev cmake
 
 # Install and setup OCaml environment
 RUN opam init -y --disable-sandboxing --bare
@@ -30,6 +30,16 @@ RUN curl -sL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-
 # Download and install Go 18
 RUN curl -sL https://go.dev/dl/go1.18.10.linux-amd64.tar.gz | tar xzf - -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin:/root/go/bin"
+
+# Download and build mimalloc 2.1.2
+RUN curl -sL https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz | tar xvz
+WORKDIR /artifact/mimalloc-2.1.2
+RUN mkdir -p out/release
+WORKDIR /artifact/mimalloc-2.1.2/out/release
+RUN cmake ../..
+RUN make
+
+WORKDIR /artifact
 
 ## Copy and build local sources
 # Copy reference interpreter
@@ -73,7 +83,7 @@ RUN make wasi-libc
 
 # Copy benchmarks
 WORKDIR /artifact
-COPY benchmarks/c ./switching-throughput
+COPY benchmarks/c10m ./switching-throughput
 RUN mv wasi-sdk-20.0 ./switching-throughput/wasi-sdk-20.0
 COPY benchmarks/go ./go-compile-and-size
 WORKDIR /artifact/switching-throughput
@@ -92,6 +102,7 @@ ENV WASMTOOLS="/artifact/wasm-tools"
 ENV WASMTIME="/artifact/wasmtime"
 ENV TINYGO="/artifact/tinygo"
 ENV CBENCH="/artifact/switching-throughput"
+ENV MIMALLOC="/artifact/mimalloc-2.1.2/out/release/libmimalloc.so"
 
 ## Final steps
 ENV DEBIAN_FRONTEND teletype

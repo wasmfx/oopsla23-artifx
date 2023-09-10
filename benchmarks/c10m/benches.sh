@@ -4,7 +4,7 @@ function bench() {
   rexprtime="median("
   rexprmem="median("
   for i in {1..5}; do
-    num=`{ \time -f '%e %M' $@ >/dev/null; } 2>&1`
+    num=`{ LD_PRELOAD=$MIMALLOC \time -f '%e %M' $@ >/dev/null; } 2>&1`
     echo $num
     tm=`echo "$num" | cut -f1 -d' '`
     mm=`echo "$num" | cut -f2 -d' '`
