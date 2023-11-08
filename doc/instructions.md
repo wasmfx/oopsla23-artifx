@@ -415,7 +415,7 @@ publicly visible. The output is an optimised binary. Thus we use the
 utility `wasm2wat` (from wabt) to turn the binary into a textual Wasm
 file named `wasmfx_import.wat` (see the perl script
 [benchmarks/c/wasmfx.pl](./benchmarks/c/wasmfx.pl) for the glorious
-details). The next line applies the Perl script `wasmfx.pl` to
+details). The next line applies the Raku script `wasmfx.pl` to
 textually substitute in the required runtime components. The resulting
 `wasmfx.wat` is translated back into binary file using the WasmFX
 reference interpreter (called `wasm` in the above listing). Finally,
@@ -430,7 +430,7 @@ Our patched TinyGo compiler works as follows
 
 1. Use the JavaScript runtime for WASI with a stub event handler.
 2. Skip the Asyncify pass on Wasm modules produced by the TinyGo.
-3. Instead, run the Perl script [tinygo/effects.pl](./tinygo/effects.pl). It:
+3. Instead, run the Raku script [tinygo/effects.raku](./tinygo/effects.raku). It:
   - Replaces the runtime scheduler with a WasmFX-powered scheduler
     similar to the one in Section 2.5 of the paper.
   - Replaces the runtime function `task.Pause` with the WasmFX

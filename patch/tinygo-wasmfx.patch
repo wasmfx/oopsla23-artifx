@@ -33,12 +33,12 @@ index 00000000..49d6870d
 +#!/usr/bin/env sh
 +./tinygo build -target wasi -o /tmp/tinygo.wasm "$1"
 +wasm2wat /tmp/tinygo.wasm > /tmp/preprocess.wat
-+raku effects.pl </tmp/preprocess.wat
-diff --git a/effects.pl b/effects.pl
++raku effects.raku </tmp/preprocess.wat
+diff --git a/effects.raku b/effects.raku
 new file mode 100644
 index 00000000..b0676448
 --- /dev/null
-+++ b/effects.pl
++++ b/effects.raku
 @@ -0,0 +1,213 @@
 +use v6;
 +

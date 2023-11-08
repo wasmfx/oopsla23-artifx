@@ -415,7 +415,7 @@ Our patched TinyGo compiler works as follows
 
 1. Use the JavaScript runtime for WASI with a stub event handler.
 2. Skip the Asyncify pass on Wasm modules produced by the TinyGo.
-3. Instead, run the Perl script [tinygo/effects.pl](./tinygo/effects.pl). It:
+3. Instead, run the Raku script [tinygo/effects.raku](./tinygo/effects.raku). It:
   - Replaces the runtime scheduler with a WasmFX-powered scheduler
     similar to the one in Section 2.5 of the paper.
   - Replaces the runtime function `task.Pause` with the WasmFX
